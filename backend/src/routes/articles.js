@@ -44,6 +44,77 @@ router.get('/', async (req, res) => {
     if (conn) conn.release();
   }
 });
+
+// Получить статью по ID (публичный доступ)
+router.get('/:id', async (req, res) => {
+  let conn;
+  try {
+    const { id } = req.params;
+    conn = await getConnection();
+
+    const articles = await conn.query(`
+      SELECT a.*, c.name as category_name, u.username as author_name 
+      FROM articles a 
+      LEFT JOIN categories c ON a.category_id = c.id 
+      LEFT JOIN users u ON a.created_by = u.id 
+      WHERE a.id = ?
+    `, [id]);
+
+    if (articles.length === 0) {
+      return res.status(404).json({ error: 'Статья не найдена' });
+    }
+
+    // Обрабатываем JSON поля
+    const processedArticle = {
+      ...articles[0],
+      files: safeJSONParse(articles[0].files),
+      images: safeJSONParse(articles[0].images)
+    };
+
+    res.json(processedArticle);
+  } catch (error) {
+    console.error('Ошибка получения статьи:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// Получить статью для редактирования (с дополнительной информацией)
+router.get('/:id/edit', optionalAuth, isAdmin, async (req, res) => {
+  let conn;
+  try {
+    const { id } = req.params;
+    conn = await getConnection();
+
+    const articles = await conn.query(`
+      SELECT a.*, c.name as category_name, u.username as author_name 
+      FROM articles a 
+      LEFT JOIN categories c ON a.category_id = c.id 
+      LEFT JOIN users u ON a.created_by = u.id 
+      WHERE a.id = ?
+    `, [id]);
+
+    if (articles.length === 0) {
+      return res.status(404).json({ error: 'Статья не найдена' });
+    }
+
+    // Обрабатываем JSON поля
+    const processedArticle = {
+      ...articles[0],
+      files: safeJSONParse(articles[0].files),
+      images: safeJSONParse(articles[0].images)
+    };
+
+    res.json(processedArticle);
+  } catch (error) {
+    console.error('Ошибка получения статьи:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
 // Создать статью (только для администраторов)
 router.post('/', optionalAuth, isAdmin, async (req, res) => {
   let conn;
@@ -51,7 +122,7 @@ router.post('/', optionalAuth, isAdmin, async (req, res) => {
     const { title, content, category_id, files, images } = req.body;
     conn = await getConnection();
 
-    // Обработка файлов и изображений (храним как base64 в базе данных)
+    // Process files and images (store as base64 in database)
     const processedFiles = files ? files.map(file => ({
       id: uuidv4(),
       name: file.name,
@@ -101,115 +172,6 @@ router.post('/', optionalAuth, isAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Ошибка создания статьи:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-  } finally {
-    if (conn) conn.release();
-  }
-});
-
-// Получить статью по ID (публичный доступ)
-router.get('/:id', async (req, res) => {
-  let conn;
-  try {
-    const { id } = req.params;
-    conn = await getConnection();
-
-    const articles = await conn.query(`
-      SELECT a.*, c.name as category_name, u.username as author_name 
-      FROM articles a 
-      LEFT JOIN categories c ON a.category_id = c.id 
-      LEFT JOIN users u ON a.created_by = u.id 
-      WHERE a.id = ?
-    `, [id]);
-
-
-    if (articles.length === 0) {
-      return res.status(404).json({ error: 'Статья не найдена' });
-    }
-
-    res.json(articles[0]);
-
-    // res.json(articles[0]);
-  } catch (error) {
-    console.error('Ошибка получения статьи:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-  } finally {
-    if (conn) conn.release();
-  }
-});
-
-// Получить статистику статей по категориям
-router.get('/stats/categories', async (req, res) => {
-  let conn;
-  try {
-    conn = await getConnection();
-
-
-    // Получаем количество статей для каждой категории
-    const stats = await conn.query(`
-      SELECT 
-        c.id as category_id,
-        c.name as category_name,
-        COUNT(a.id) as article_count
-      FROM categories c
-      LEFT JOIN articles a ON c.id = a.category_id
-      GROUP BY c.id, c.name
-      ORDER BY c.name
-    `);
-
-    console.log('Статистика категорий:', stats); // Добавим лог для отладки
-
-    const statsObj = {};
-    stats.forEach(stat => {
-      statsObj[stat.category_id] = parseInt(stat.article_count);
-    });
-
-    res.json(statsObj);
-
-    res.json(statsObj);
-  } catch (error) {
-    console.error('Ошибка получения статистики:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-  } finally {
-    if (conn) conn.release();
-  }
-});
-
-// Получить общую статистику для панели управления
-router.get('/management/stats', async (req, res) => {
-  let conn;
-  try {
-    conn = await getConnection();
-
-    // Общее количество статей
-    const totalArticles = await conn.query('SELECT COUNT(*) as count FROM articles');
-
-    // Количество категорий со статьями (активные категории)
-    const activeCategories = await conn.query(`
-      SELECT COUNT(DISTINCT category_id) as count 
-      FROM articles 
-      WHERE category_id IS NOT NULL
-    `);
-
-    // Общее количество категорий
-    const totalCategories = await conn.query('SELECT COUNT(*) as count FROM categories');
-
-    // Последние созданные статьи
-    const recentArticles = await conn.query(`
-      SELECT title, created_at 
-      FROM articles 
-      ORDER BY created_at DESC 
-      LIMIT 5
-    `);
-
-    res.json({
-      totalArticles: totalArticles[0].count,
-      activeCategories: activeCategories[0].count,
-      totalCategories: totalCategories[0].count,
-      recentArticlesCount: recentArticles.length
-    });
-  } catch (error) {
-    console.error('Ошибка получения общей статистики:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   } finally {
     if (conn) conn.release();
@@ -330,33 +292,74 @@ router.delete('/:id', optionalAuth, isAdmin, async (req, res) => {
   }
 });
 
-// Получить статью для редактирования (с дополнительной информацией)
-router.get('/:id/edit', optionalAuth, isAdmin, async (req, res) => {
+// Получить статистику статей по категориям
+router.get('/stats/categories', async (req, res) => {
   let conn;
   try {
-    const { id } = req.params;
     conn = await getConnection();
 
-    const articles = await conn.query(`
-      SELECT a.*, c.name as category_name, u.username as author_name 
-      FROM articles a 
-      LEFT JOIN categories c ON a.category_id = c.id 
-      LEFT JOIN users u ON a.created_by = u.id 
-      WHERE a.id = ?
-    `, [id]);
+    // Получаем количество статей для каждой категории
+    const stats = await conn.query(`
+      SELECT 
+        c.id as category_id,
+        c.name as category_name,
+        COUNT(a.id) as article_count
+      FROM categories c
+      LEFT JOIN articles a ON c.id = a.category_id
+      GROUP BY c.id, c.name
+      ORDER BY c.name
+    `);
 
-    if (articles.length === 0) {
-      return res.status(404).json({ error: 'Статья не найдена' });
-    }
+    // Преобразуем в объект для удобства
+    const statsObj = {};
+    stats.forEach(stat => {
+      statsObj[stat.category_id] = stat.article_count;
+    });
 
-    // Обрабатываем JSON поля
-    const processedArticle = {
-      ...articles[0],
-      files: safeJSONParse(articles[0].files),
-      images: safeJSONParse(articles[0].images)
-    };
+    res.json(statsObj);
   } catch (error) {
-    console.error('Ошибка получения статьи:', error);
+    console.error('Ошибка получения статистики:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// Получить общую статистику для панели управления
+router.get('/management/stats', async (req, res) => {
+  let conn;
+  try {
+    conn = await getConnection();
+
+    // Общее количество статей
+    const totalArticles = await conn.query('SELECT COUNT(*) as count FROM articles');
+
+    // Количество категорий со статьями (активные категории)
+    const activeCategories = await conn.query(`
+      SELECT COUNT(DISTINCT category_id) as count 
+      FROM articles 
+      WHERE category_id IS NOT NULL
+    `);
+
+    // Общее количество категорий
+    const totalCategories = await conn.query('SELECT COUNT(*) as count FROM categories');
+
+    // Последние созданные статьи
+    const recentArticles = await conn.query(`
+      SELECT title, created_at 
+      FROM articles 
+      ORDER BY created_at DESC 
+      LIMIT 5
+    `);
+
+    res.json({
+      totalArticles: totalArticles[0].count,
+      activeCategories: activeCategories[0].count,
+      totalCategories: totalCategories[0].count,
+      recentArticlesCount: recentArticles.length
+    });
+  } catch (error) {
+    console.error('Ошибка получения общей статистики:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   } finally {
     if (conn) conn.release();
