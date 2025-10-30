@@ -136,11 +136,15 @@ function Dashboard() {
                   <span className="action-icon">✏️</span>
                   <span>Создать статью</span>
                 </Link>
-
-                <button className="action-button" onClick={() => alert('Управление категориями скоро будет доступно!')}>
-                  <span className="action-icon">➕</span>
+                <Link to="/articles/manage" className="action-button">
+                  <span className="action-icon"></span>
+                  <span>Управление статьями</span>
+                </Link>
+                <Link to="/categories/manage" className="action-button">
+                  <span className="action-icon"></span>
                   <span>Управление категориями</span>
-                </button>
+                </Link>
+
               </>
             )}
 

@@ -25,7 +25,10 @@ function Navbar() {
         {isAuthenticated ? (
           <>
             {user?.role === 'admin' && (
-              <Link to="/articles/create">Создать статью</Link>
+              <>
+                <Link to="/articles/create">Создать статью</Link>
+                <Link to="/categories/manage">Управление категориями</Link>
+              </>
             )}
             <span className="user-info">
               Добро пожаловать, {user?.username} ({user?.role === 'admin' ? 'администратор' : 'пользователь'})

@@ -46,6 +46,15 @@ function Articles() {
       : content;
   };
 
+  // Безопасное получение файлов и изображений
+  const getFiles = (article) => {
+    return article.files || [];
+  };
+
+  const getImages = (article) => {
+    return article.images || [];
+  };
+
   if (loading) {
     return <div className="loading">Загрузка статей...</div>;
   }
@@ -94,48 +103,53 @@ function Articles() {
             )}
           </div>
         ) : (
-          filteredArticles.map(article => (
-            <article key={article.id} className="article-card">
-              <div className="article-header">
-                <h2 className="article-title">{article.title}</h2>
-                <div className="article-meta">
-                  <span className="category-badge">{article.category_name}</span>
-                  <span className="author">Автор: {article.author_name}</span>
-                  <span className="date">
-                    {new Date(article.created_at).toLocaleDateString('ru-RU')}
-                  </span>
-                </div>
-              </div>
+          filteredArticles.map(article => {
+            const files = getFiles(article);
+            const images = getImages(article);
 
-              <div className="article-content">
-                <p>{getArticleExcerpt(article.content)}</p>
-              </div>
-
-              <div className="article-footer">
-                <div className="article-attachments">
-                  {article.files && JSON.parse(article.files).length > 0 && (
-                    <span className="attachments-count">
-                      📎 {JSON.parse(article.files).length} файл(ов)
+            return (
+              <article key={article.id} className="article-card">
+                <div className="article-header">
+                  <h2 className="article-title">{article.title}</h2>
+                  <div className="article-meta">
+                    <span className="category-badge">{article.category_name}</span>
+                    <span className="author">Автор: {article.author_name}</span>
+                    <span className="date">
+                      {new Date(article.created_at).toLocaleDateString('ru-RU')}
                     </span>
-                  )}
-                  {article.images && JSON.parse(article.images).length > 0 && (
-                    <span className="images-count">
-                      🖼️ {JSON.parse(article.images).length} изображений
-                    </span>
-                  )}
+                  </div>
                 </div>
 
-                <div className="article-actions">
-                  <Link
-                    to={`/articles/${article.id}`}
-                    className="read-more-btn"
-                  >
-                    Читать далее
-                  </Link>
+                <div className="article-content">
+                  <p>{getArticleExcerpt(article.content)}</p>
                 </div>
-              </div>
-            </article>
-          ))
+
+                <div className="article-footer">
+                  <div className="article-attachments">
+                    {files.length > 0 && (
+                      <span className="attachments-count">
+                        📎 {files.length} файл(ов)
+                      </span>
+                    )}
+                    {images.length > 0 && (
+                      <span className="images-count">
+                        🖼️ {images.length} изображений
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="article-actions">
+                    <Link
+                      to={`/articles/${article.id}`}
+                      className="read-more-btn"
+                    >
+                      Читать далее
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            );
+          })
         )}
       </div>
     </div>

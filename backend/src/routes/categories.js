@@ -180,4 +180,37 @@ router.delete('/:id', optionalAuth, isAdmin, async (req, res) => {
   }
 });
 
+// Получить статистику категорий
+router.get('/stats/articles', async (req, res) => {
+  let conn;
+  try {
+    conn = await getConnection();
+
+    const stats = await conn.query(`
+      SELECT 
+        c.id,
+        c.name,
+        COUNT(a.id) as article_count
+      FROM categories c
+      LEFT JOIN articles a ON c.id = a.category_id
+      GROUP BY c.id, c.name
+    `);
+
+    const statsObj = {};
+    stats.forEach(stat => {
+      statsObj[stat.id] = parseInt(stat.article_count);
+    });
+
+    res.json(statsObj);
+  } catch (error) {
+    console.error('Ошибка получения статистики категорий:', error);
+    res.status(500).json({
+      error: 'Внутренняя ошибка сервера',
+      details: error.message
+    });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
 export default router;

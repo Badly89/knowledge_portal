@@ -24,6 +24,15 @@ function ArticleDetail() {
     }
   };
 
+  // Безопасное получение файлов и изображений
+  const getFiles = () => {
+    article.files || [];
+  };
+
+  const getImages = () => {
+    article.images || [];
+  };
+
   const downloadFile = (file) => {
     const link = document.createElement('a');
     link.href = `data:${file.type};base64,${file.data}`;
@@ -47,8 +56,8 @@ function ArticleDetail() {
     );
   }
 
-  const files = article.files ? JSON.parse(article.files) : [];
-  const images = article.images ? JSON.parse(article.images) : [];
+  const files = getFiles();
+  const images = getImages();
 
   return (
     <div className="article-detail">
