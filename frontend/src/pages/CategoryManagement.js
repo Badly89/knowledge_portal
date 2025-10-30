@@ -462,6 +462,7 @@ function CategoryManagement() {
         )}
       </div>
     </div>
+
   );
 }
 

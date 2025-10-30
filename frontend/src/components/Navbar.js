@@ -1,15 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = () => {
     logout();
     navigate('/dashboard');
   };
+
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+    }
+  };
+
 
   return (
     <nav className="navbar">
@@ -18,6 +29,23 @@ function Navbar() {
           <i className="fas fa-book-open me-2"></i>
           Портал Базы Знаний
         </Link>
+      </div>
+
+      <div className="nav-search">
+        <form onSubmit={handleSearch} className="nav-search-form">
+          <div className="search-input-group">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Поиск статей..."
+              className="nav-search-input"
+            />
+            <button type="submit" className="nav-search-btn">
+              <i className="fas fa-search"></i>
+            </button>
+          </div>
+        </form>
       </div>
 
       <div className="nav-links">
@@ -36,22 +64,7 @@ function Navbar() {
 
         {isAuthenticated ? (
           <>
-            {user?.role === 'admin' && (
-              <>
-                <Link to="/articles/create">
-                  <i className="fas fa-plus-circle me-1"></i>
-                  Создать статью
-                </Link>
-                <Link to="/articles/manage">
-                  <i className="fas fa-edit me-1"></i>
-                  Управление статьями
-                </Link>
-                <Link to="/categories/manage">
-                  <i className="fas fa-cog me-1"></i>
-                  Управление категориями
-                </Link>
-              </>
-            )}
+
             <span className="user-info">
               <i className="fas fa-user me-1"></i>
               {user?.username} ({user?.role === 'admin' ? 'администратор' : 'пользователь'})

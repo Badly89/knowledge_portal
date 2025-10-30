@@ -309,11 +309,12 @@ router.get('/stats/categories', async (req, res) => {
       GROUP BY c.id, c.name
       ORDER BY c.name
     `);
+    console.log('Статистика категорий:', stats); // Добавим лог для отладки
 
     // Преобразуем в объект для удобства
     const statsObj = {};
     stats.forEach(stat => {
-      statsObj[stat.category_id] = stat.article_count;
+      statsObj[stat.category_id] = parseInt(stat.article_count);
     });
 
     res.json(statsObj);
@@ -360,6 +361,122 @@ router.get('/management/stats', async (req, res) => {
     });
   } catch (error) {
     console.error('Ошибка получения общей статистики:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// Поиск статей
+router.get('/search', async (req, res) => {
+  let conn;
+  try {
+    const { q: searchQuery, category, page = 1, limit = 10 } = req.query;
+
+    if (!searchQuery || searchQuery.trim() === '') {
+      return res.status(400).json({ error: 'Поисковый запрос не может быть пустым' });
+    }
+
+    conn = await getConnection();
+
+    const offset = (page - 1) * limit;
+    const searchTerm = `%${searchQuery.trim()}%`;
+
+    let whereClause = `(a.title LIKE ? OR a.content LIKE ?)`;
+    let queryParams = [searchTerm, searchTerm];
+
+    // Добавляем фильтр по категории если указан
+    if (category && category !== 'all') {
+      whereClause += ` AND a.category_id = ?`;
+      queryParams.push(category);
+    }
+
+    // Получаем статьи с пагинацией
+    const articles = await conn.query(`
+      SELECT a.*, c.name as category_name, u.username as author_name 
+      FROM articles a 
+      LEFT JOIN categories c ON a.category_id = c.id 
+      LEFT JOIN users u ON a.created_by = u.id 
+      WHERE ${whereClause}
+      ORDER BY 
+        CASE 
+          WHEN a.title LIKE ? THEN 1 
+          WHEN a.content LIKE ? THEN 2 
+          ELSE 3 
+        END,
+        a.created_at DESC
+      LIMIT ? OFFSET ?
+    `, [...queryParams, searchTerm, searchTerm, parseInt(limit), offset]);
+
+    // Получаем общее количество для пагинации
+    const countResult = await conn.query(`
+      SELECT COUNT(*) as total 
+      FROM articles a 
+      WHERE ${whereClause}
+    `, queryParams);
+
+    const totalArticles = countResult[0].total;
+    const totalPages = Math.ceil(totalArticles / limit);
+
+    // Обрабатываем JSON поля
+    const processedArticles = articles.map(article => ({
+      ...article,
+      files: safeJSONParse(article.files),
+      images: safeJSONParse(article.images)
+    }));
+
+    res.json({
+      articles: processedArticles,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalArticles,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      },
+      searchInfo: {
+        query: searchQuery,
+        category: category || 'all',
+        resultsCount: articles.length
+      }
+    });
+  } catch (error) {
+    console.error('Ошибка поиска статей:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// Быстрый поиск для автодополнения
+router.get('/search/suggestions', async (req, res) => {
+  let conn;
+  try {
+    const { q: searchQuery } = req.query;
+
+    if (!searchQuery || searchQuery.trim() === '') {
+      return res.json([]);
+    }
+
+    conn = await getConnection();
+
+    const searchTerm = `%${searchQuery.trim()}%`;
+
+    const suggestions = await conn.query(`
+      SELECT 
+        id,
+        title,
+        category_id,
+        MATCH(title, content) AGAINST(? IN NATURAL LANGUAGE MODE) as relevance
+      FROM articles 
+      WHERE title LIKE ? OR content LIKE ?
+      ORDER BY relevance DESC, created_at DESC
+      LIMIT 5
+    `, [searchQuery, searchTerm, searchTerm]);
+
+    res.json(suggestions);
+  } catch (error) {
+    console.error('Ошибка поиска подсказок:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   } finally {
     if (conn) conn.release();

@@ -11,6 +11,7 @@ import CategoryManagement from './pages/CategoryManagement';
 import Navbar from './components/Navbar';
 import ArticleManagement from './pages/ArticleManagement';
 import EditArticle from './pages/EditArticle';
+import SearchArticles from './pages/SearchArticles';
 
 function ProtectedRoute({ children, requireAuth = false, requireAdmin = false }) {
   const { user, isAuthenticated } = useAuth();
@@ -82,6 +83,11 @@ function App() {
                     <EditArticle />
                   </ProtectedRoute>
                 }
+              />
+
+              <Route
+                path="/search"
+                element={<SearchArticles />}
               />
               <Route path="/" element={<Navigate to="/dashboard" />} />
             </Routes>

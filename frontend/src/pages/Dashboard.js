@@ -9,11 +9,13 @@ function Dashboard() {
     totalCategories: 0,
     recentArticles: []
   });
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     fetchDashboardData();
+    fetchCategories();
   }, []);
 
   const fetchDashboardData = async () => {
@@ -37,6 +39,15 @@ function Dashboard() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get('/api/categories');
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки категорий:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="dashboard-loading">
@@ -51,7 +62,7 @@ function Dashboard() {
       <div className="dashboard-header">
         <h1>
           <i className="fas fa-book-open me-2"></i>
-          Портал Базы Знаний
+          Единая база знаний Администрации города Ноябрьска
         </h1>
         <p>
           {isAuthenticated
@@ -62,120 +73,156 @@ function Dashboard() {
 
       </div>
 
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon">
-            <i className="fas fa-book"></i>
-          </div>
-          <div className="stat-info">
-            <h3>Всего статей</h3>
-            <p className="stat-number">{stats.totalArticles}</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon">
-            <i className="fas fa-folder"></i>
-          </div>
-          <div className="stat-info">
-            <h3>Категории</h3>
-            <p className="stat-number">{stats.totalCategories}</p>
-          </div>
-        </div>
-
-
-      </div>
-
-      <div className="dashboard-sections">
-        <div className="recent-articles">
+      <div className="dashboard-main-content">
+        {/* Центральная часть - Категории */}
+        <div className="categories-center-section">
           <div className="section-header">
             <h2>
-              <i className="fas fa-clock me-2"></i>
-              Последние статьи
+              <i className="fas fa-folder-open me-2"></i>
+              Категории статей
             </h2>
-            <Link to="/articles" className="view-all-link">
-              <i className="fas fa-list me-1"></i>
-              Все статьи
-            </Link>
+            <p>Выберите категорию для просмотра статей</p>
           </div>
 
-          {stats.recentArticles.length === 0 ? (
-            <div className="no-data">
-              <i className="fas fa-inbox fa-2x mb-2"></i>
-              <p>Статьи пока отсутствуют.</p>
+          {categories.length === 0 ? (
+            <div className="no-categories-center">
+              <i className="fas fa-folder-open fa-3x mb-3"></i>
+              <h3>Категории отсутствуют</h3>
+              <p>Пока нет созданных категорий</p>
               {isAuthenticated && user?.role === 'admin' && (
-                <Link to="/articles/create" className="create-link">
+                <Link to="/categories/manage" className="btn-primary">
                   <i className="fas fa-plus me-1"></i>
-                  Создать первую статью
+                  Создать категории
                 </Link>
               )}
             </div>
           ) : (
-            <div className="articles-list">
-              {stats.recentArticles.map(article => (
-                <div key={article.id} className="article-item">
-                  <div className="article-main">
-                    <h4 className="article-title">{article.title}</h4>
-                    <p className="article-meta">
-                      <i className="fas fa-folder me-1"></i>
-                      в <span className="category">{article.category_name}</span> •
-                      <i className="fas fa-user me-1 ms-2"></i>
-                      автор: {article.author_name} •
-                      <i className="fas fa-calendar me-1 ms-2"></i>
-                      {new Date(article.created_at).toLocaleDateString('ru-RU')}
-                    </p>
+            <div className="categories-grid-center">
+              {categories.map(category => (
+                <Link
+                  key={category.id}
+                  to={`/articles?category=${category.id}`}
+                  className="category-card-center"
+                >
+                  <div className="category-icon">
+                    <i className="fas fa-folder"></i>
                   </div>
-                  <div className="article-actions">
-                    <Link
-                      to={`/articles/${article.id}`}
-                      className="read-link"
-                    >
-                      <i className="fas fa-eye me-1"></i>
-                      Читать
-                    </Link>
+                  <div className="category-content">
+                    <h3 className="category-name">{category.name}</h3>
+                    {category.description && (
+                      <p className="category-description">{category.description}</p>
+                    )}
+                    <div className="category-meta">
+                      <span className="article-count">
+                        <i className="fas fa-file me-1"></i>
+                        Статей: {category.article_count || 0}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                  <div className="category-arrow">
+                    <i className="fas fa-chevron-right"></i>
+                  </div>
+                </Link>
               ))}
             </div>
           )}
+
+
         </div>
 
-        <div className="quick-actions">
-          <h2>
-            <i className="fas fa-bolt me-2"></i>
-            Быстрые действия
-          </h2>
-          <div className="action-buttons">
-            <Link to="/articles" className="action-button">
-              <i className="fas fa-book-open me-2"></i>
-              <span>Просмотр статей</span>
-            </Link>
-
-            <Link to="/categories" className="action-button">
-              <i className="fas fa-folder me-2"></i>
-              <span>Просмотр категорий</span>
-            </Link>
-
-            {isAuthenticated && user?.role === 'admin' && (
-              <>
-                <Link to="/articles/create" className="action-button">
-                  <i className="fas fa-edit me-2"></i>
-                  <span>Создать статью</span>
-                </Link>
-
-                <Link to="/categories/manage" className="action-button">
-                  <i className="fas fa-cog me-2"></i>
-                  <span>Управление категориями</span>
-                </Link>
-              </>
-            )}
-
-            {!isAuthenticated && (
-              <Link to="/login" className="action-button">
-                <i className="fas fa-sign-in-alt me-2"></i>
-                <span>Войти для большего</span>
+        {/* Правая часть - Быстрые действия */}
+        <div className="quick-actions-sidebar">
+          <div className="sidebar-section">
+            <h3>
+              <i className="fas fa-bolt me-2"></i>
+              Быстрые действия
+            </h3>
+            <div className="action-buttons-vertical">
+              <Link to="/articles" className="action-btn">
+                <i className="fas fa-book-open me-2"></i>
+                <span>Просмотр статей</span>
               </Link>
-            )}
+
+              <Link to="/categories" className="action-btn">
+                <i className="fas fa-folder me-2"></i>
+                <span>Все категории</span>
+              </Link>
+
+              <Link to="/search" className="action-btn">
+                <i className="fas fa-search me-2"></i>
+                <span>Поиск статей</span>
+              </Link>
+
+
+
+              {/* Функционал администратора */}
+              {isAuthenticated && user?.role === 'admin' && (
+                <>
+                  <div className="admin-section">
+                    <h4>
+                      <i className="fas fa-crown me-2"></i>
+                      Панель администратора
+                    </h4>
+
+                    <Link to="/articles/create" className="action-btn admin">
+                      <i className="fas fa-plus-circle me-2"></i>
+                      <span>Создать статью</span>
+                    </Link>
+
+                    <Link to="/articles/manage" className="action-btn admin">
+                      <i className="fas fa-edit me-2"></i>
+                      <span>Управление статьями</span>
+                    </Link>
+
+                    <Link to="/categories/manage" className="action-btn admin">
+                      <i className="fas fa-cog me-2"></i>
+                      <span>Управление категориями</span>
+                    </Link>
+
+                    <div className="admin-stats">
+                      <div className="admin-stat">
+                        <i className="fas fa-chart-bar me-2"></i>
+                        <span>Статистика системы</span>
+                      </div>
+                      <div className="stat-numbers">
+                        <div className="stat-item">
+                          <strong>{stats.totalArticles}</strong>
+                          <span>статей</span>
+                        </div>
+                        <div className="stat-item">
+                          <strong>{stats.totalCategories}</strong>
+                          <span>категорий</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+
+            </div>
+          </div>
+
+          {/* Быстрые ссылки */}
+          <div className="sidebar-section">
+            <h3>
+              <i className="fas fa-link me-2"></i>
+              Быстрые ссылки
+            </h3>
+            <div className="quick-links">
+              <Link to="/articles?sort=recent" className="quick-link">
+                <i className="fas fa-fire me-2"></i>
+                Новые статьи
+              </Link>
+              <Link to="/articles?sort=popular" className="quick-link">
+                <i className="fas fa-star me-2"></i>
+                Популярные
+              </Link>
+              <Link to="/help" className="quick-link">
+                <i className="fas fa-question-circle me-2"></i>
+                Помощь
+              </Link>
+            </div>
           </div>
         </div>
       </div>
