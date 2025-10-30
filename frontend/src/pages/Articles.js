@@ -48,11 +48,27 @@ function Articles() {
 
   // Безопасное получение файлов и изображений
   const getFiles = (article) => {
-    return article.files || [];
+    try {
+      if (!article.files) return [];
+      return typeof article.files === 'string'
+        ? JSON.parse(article.files)
+        : article.files;
+    } catch (error) {
+      console.error('Ошибка парсинга files:', error);
+      return [];
+    }
   };
 
   const getImages = (article) => {
-    return article.images || [];
+    try {
+      if (!article.images) return [];
+      return typeof article.images === 'string'
+        ? JSON.parse(article.images)
+        : article.images;
+    } catch (error) {
+      console.error('Ошибка парсинга images:', error);
+      return [];
+    }
   };
 
   if (loading) {

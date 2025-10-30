@@ -1,3 +1,5 @@
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
 * {
   margin: 0;
   padding: 0;
@@ -1893,4 +1895,75 @@ tr:hover {
     flex-direction: column;
     gap: 0.25rem;
   }
+}
+
+/* Font Awesome spacing utilities */
+.me-1 {
+  margin-right: 0.25rem;
+}
+
+.me-2 {
+  margin-right: 0.5rem;
+}
+
+.ms-1 {
+  margin-left: 0.25rem;
+}
+
+.ms-2 {
+  margin-left: 0.5rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+/* Font Awesome specific styles */
+.fa-spin {
+  animation: fa-spin 2s infinite linear;
+}
+
+/* Icon colors */
+.text-warning {
+  color: #f39c12;
+}
+
+.text-success {
+  color: #27ae60;
+}
+
+.text-danger {
+  color: #e74c3c;
+}
+
+.text-info {
+  color: #3498db;
+}
+
+/* Enhanced stat icons */
+.stat-icon i {
+  font-size: 2.5rem;
+  opacity: 0.9;
+}
+
+/* Action buttons with icons */
+.btn-action i {
+  font-size: 1rem;
+}
+
+/* Loading states */
+.loading i {
+  margin-right: 0.5rem;
+}
+
+/* Empty states */
+.empty-icon i {
+  opacity: 0.5;
+  margin-bottom: 1rem;
+}
+
+/* Form icons */
+.form-group label i {
+  margin-right: 0.5rem;
+  color: #3498db;
 }

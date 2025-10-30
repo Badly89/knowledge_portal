@@ -187,12 +187,16 @@ function CategoryManagement() {
     <div className="category-management">
       <div className="page-header">
         <div className="header-content">
-          <h1>Управление категориями</h1>
+          <h1>
+            <i className="fas fa-cog me-2"></i>
+            Управление категориями
+          </h1>
           <p>Создавайте, редактируйте и удаляйте категории статей</p>
         </div>
         <div className="header-actions">
           <Link to="/categories" className="btn-secondary">
-            📂 Все категории
+            <i className="fas fa-folder me-1"></i>
+            Все категории
           </Link>
           <button
             onClick={() => {
@@ -204,7 +208,8 @@ function CategoryManagement() {
             }}
             className="btn-primary"
           >
-            ➕ Новая категория
+            <i className="fas fa-plus me-1"></i>
+            Новая категория
           </button>
         </div>
       </div>
@@ -269,21 +274,27 @@ function CategoryManagement() {
       {/* Статистика */}
       <div className="management-stats">
         <div className="stat-card">
-          <div className="stat-icon">📁</div>
+          <div className="stat-icon">
+            <i className="fas fa-folder"></i>
+          </div>
           <div className="stat-info">
             <h3>Всего категорий</h3>
             <p className="stat-number">{categories.length}</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">📚</div>
+          <div className="stat-icon">
+            <i className="fas fa-book"></i>
+          </div>
           <div className="stat-info">
             <h3>Всего статей</h3>
             <p className="stat-number">{getTotalArticles()}</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">📊</div>
+          <div className="stat-icon">
+            <i className="fas fa-chart-bar"></i>
+          </div>
           <div className="stat-info">
             <h3>Активных категорий</h3>
             <p className="stat-number">{getActiveCategoriesCount()}</p>
@@ -291,7 +302,9 @@ function CategoryManagement() {
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">📈</div>
+          <div className="stat-icon">
+            <i className="fas fa-chart-line"></i>
+          </div>
           <div className="stat-info">
             <h3>Заполненность</h3>
             <p className="stat-number">
@@ -308,10 +321,17 @@ function CategoryManagement() {
       {/* Список категорий */}
       <div className="categories-management-list">
         <div className="list-header">
-          <h2>Список категорий</h2>
+          <h2>
+            <i className="fas fa-list me-2"></i>
+            Список категорий
+          </h2>
           <div className="header-stats">
-            <span className="total-count">{categories.length} категорий</span>
+            <span className="total-count">
+              <i className="fas fa-folder me-1"></i>
+              {categories.length} категорий
+            </span>
             <span className="active-count">
+              <i className="fas fa-check-circle me-1"></i>
               {getActiveCategoriesCount()} с статьями
             </span>
           </div>
@@ -319,13 +339,16 @@ function CategoryManagement() {
 
         {categories.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📁</div>
+            <div className="empty-icon">
+              <i className="fas fa-folder-open fa-3x"></i>
+            </div>
             <h3>Категории отсутствуют</h3>
             <p>Создайте первую категорию для организации статей</p>
             <button
               onClick={() => setShowCreateForm(true)}
               className="btn-primary"
             >
+              <i className="fas fa-plus me-1"></i>
               Создать категорию
             </button>
           </div>
@@ -334,13 +357,13 @@ function CategoryManagement() {
             <table className="categories-table">
               <thead>
                 <tr>
-                  <th>Название</th>
-                  <th>Описание</th>
-                  <th>Статей</th>
-                  <th>Статус</th>
-                  <th>Создана</th>
-                  <th>Автор</th>
-                  <th>Действия</th>
+                  <th><i className="fas fa-heading me-1"></i>Название</th>
+                  <th><i className="fas fa-align-left me-1"></i>Описание</th>
+                  <th><i className="fas fa-file me-1"></i>Статей</th>
+                  <th><i className="fas fa-info-circle me-1"></i>Статус</th>
+                  <th><i className="fas fa-calendar me-1"></i>Создана</th>
+                  <th><i className="fas fa-user me-1"></i>Автор</th>
+                  <th><i className="fas fa-cog me-1"></i>Действия</th>
                 </tr>
               </thead>
               <tbody>
@@ -351,27 +374,46 @@ function CategoryManagement() {
                   return (
                     <tr key={category.id} className="category-row">
                       <td className="category-name-cell">
-                        <strong>{category.name}</strong>
+                        <strong>
+                          <i className="fas fa-folder me-1 text-warning"></i>
+                          {category.name}
+                        </strong>
                       </td>
                       <td className="category-description-cell">
                         {category.description || (
-                          <span className="no-description">Нет описания</span>
+                          <span className="no-description">
+                            <i className="fas fa-minus me-1"></i>
+                            Нет описания
+                          </span>
                         )}
                       </td>
                       <td className="article-count-cell">
                         <span className={`count-badge ${hasArticles ? 'has-articles' : 'empty'}`}>
+                          <i className="fas fa-file me-1"></i>
                           {articleCount}
                         </span>
                       </td>
                       <td className="status-cell">
                         <span className={`status-badge ${hasArticles ? 'active' : 'inactive'}`}>
-                          {hasArticles ? '📊 Активна' : '⏸️ Нет статей'}
+                          {hasArticles ? (
+                            <>
+                              <i className="fas fa-check-circle me-1"></i>
+                              Активна
+                            </>
+                          ) : (
+                            <>
+                              <i className="fas fa-pause-circle me-1"></i>
+                              Нет статей
+                            </>
+                          )}
                         </span>
                       </td>
                       <td className="date-cell">
+                        <i className="fas fa-calendar me-1"></i>
                         {new Date(category.created_at).toLocaleDateString('ru-RU')}
                       </td>
                       <td className="author-cell">
+                        <i className="fas fa-user me-1"></i>
                         {category.created_by_name}
                       </td>
                       <td className="actions-cell">
@@ -381,7 +423,7 @@ function CategoryManagement() {
                             className="btn-action btn-edit"
                             title="Редактировать"
                           >
-                            ✏️
+                            <i className="fas fa-edit"></i>
                           </button>
                           <button
                             onClick={() => handleDeleteCategory(category.id, category.name)}
@@ -389,18 +431,23 @@ function CategoryManagement() {
                             title="Удалить"
                             disabled={hasArticles}
                           >
-                            {hasArticles ? '🔒' : '🗑️'}
+                            {hasArticles ? (
+                              <i className="fas fa-lock"></i>
+                            ) : (
+                              <i className="fas fa-trash"></i>
+                            )}
                           </button>
                           <Link
                             to={`/articles?category=${category.id}`}
                             className="btn-action btn-view"
                             title="Просмотреть статьи"
                           >
-                            👁️
+                            <i className="fas fa-eye"></i>
                           </Link>
                         </div>
                         {hasArticles && (
                           <div className="delete-warning">
+                            <i className="fas fa-exclamation-triangle me-1"></i>
                             Нельзя удалить - {articleCount} {articleCount === 1 ? 'статья' :
                               articleCount >= 2 && articleCount <= 4 ? 'статьи' : 'статей'}
                           </div>

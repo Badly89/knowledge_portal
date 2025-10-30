@@ -26,11 +26,27 @@ function ArticleDetail() {
 
   // Безопасное получение файлов и изображений
   const getFiles = () => {
-    article.files || [];
+    if (!article || !article.files) return [];
+    try {
+      return typeof article.files === 'string'
+        ? JSON.parse(article.files)
+        : article.files;
+    } catch (error) {
+      console.error('Ошибка парсинга files:', error);
+      return [];
+    }
   };
 
   const getImages = () => {
-    article.images || [];
+    if (!article || !article.images) return [];
+    try {
+      return typeof article.images === 'string'
+        ? JSON.parse(article.images)
+        : article.images;
+    } catch (error) {
+      console.error('Ошибка парсинга images:', error);
+      return [];
+    }
   };
 
   const downloadFile = (file) => {

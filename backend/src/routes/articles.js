@@ -127,12 +127,7 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Статья не найдена' });
     }
 
-    const processedArticle = {
-      ...articles[0],
-      files: safeJSONParse(articles[0].files),
-      images: safeJSONParse(articles[0].images)
-    };
-
+    res.json(articles[0]);
 
     // res.json(articles[0]);
   } catch (error) {
