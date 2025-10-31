@@ -275,7 +275,7 @@ function EditArticle() {
                           className="remove-file-btn"
                           title="Удалить файл"
                         >
-                          ❌
+                          <i className="fa-solid fa-trash"></i>
                         </button>
                       </div>
                     </li>

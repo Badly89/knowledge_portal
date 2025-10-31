@@ -17,14 +17,7 @@ body {
 }
 
 /* Navbar */
-.navbar {
-  background-color: #2c3e50;
-  color: white;
-  padding: 1rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+
 
 .nav-brand a {
   color: white;
@@ -33,42 +26,6 @@ body {
   font-weight: bold;
 }
 
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.nav-links a {
-  color: white;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.nav-links a:hover {
-  background-color: #34495e;
-}
-
-.user-info {
-  color: #ecf0f1;
-  margin-right: 1rem;
-}
-
-.logout-btn {
-  background-color: #e74c3c;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  width: unset;
-}
-
-.logout-btn:hover {
-  background-color: #c0392b;
-}
 
 /* Main Content */
 .main-content {
@@ -425,7 +382,7 @@ tr:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+
 }
 
 .page-header h1 {
@@ -433,10 +390,29 @@ tr:hover {
   margin: 0;
 }
 
+.btn-add {
+  font-weight: 400;
+  padding: 0.5rem 0.75rem;
+  width: 150px;
+}
+
+
 .btn-primary {
-  background-color: #3498db;
+  display: inline-block;
+
+  color: #667eea;
+  /* padding: 12px 30px; */
+  /* border-radius: 25px; */
+  /* text-decoration: none; */
+  /* font-weight: 600; */
+
+}
+
+.btn-primary {
+
+  background-color: #267705;
   color: white;
-  padding: 0.75rem 1.5rem;
+  padding: 0.25rem 0.75rem;
   border: none;
   border-radius: 4px;
   text-decoration: none;
@@ -444,10 +420,13 @@ tr:hover {
   cursor: pointer;
   display: inline-block;
   text-align: center;
+  transition: all 0.3s ease;
 }
 
 .btn-primary:hover {
-  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  background-color: #15694d;
 }
 
 .btn-secondary {
@@ -725,19 +704,8 @@ tr:hover {
   color: #2c3e50;
 }
 
-.article-attachments {
-  padding-top: 2rem;
-  display: flex;
-  gap: 1rem;
-  font-size: 0.9rem;
-  color: #7f8c8d;
-  align-self: flex-end;
-}
 
-.article-attachments h3 {
-  color: #2c3e50;
-  margin-bottom: 1rem;
-}
+
 
 .files-list {
   display: flex;
@@ -828,8 +796,6 @@ tr:hover {
     width: 100%;
   }
 
-
-
   .page-header {
     flex-direction: column;
     gap: 1rem;
@@ -857,19 +823,8 @@ tr:hover {
   color: #f1f1f1;
 }
 
-.login-btn {
-  background-color: #27ae60;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: 500;
-  transition: background-color 0.3s;
-}
 
-.login-btn:hover {
-  background-color: #229954;
-}
+
 
 /* Stat card for guest */
 .stat-role.guest {
@@ -1157,7 +1112,7 @@ tr:hover {
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .categories-table td {

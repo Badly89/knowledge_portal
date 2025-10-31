@@ -665,7 +665,7 @@ router.get('/stats/categories', async (req, res) => {
       ORDER BY c.name
     `);
 
-    console.log('Статистика категорий:', stats);
+    // console.log('Статистика категорий:', stats);
 
     const statsObj = {};
     stats.forEach(stat => {

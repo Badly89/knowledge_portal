@@ -148,7 +148,7 @@ function Articles() {
           )}
         </h1>
         {isAuthenticated && user?.role === 'admin' && (
-          <Link to="/articles/create" className="btn-primary">
+          <Link to="/articles/create" className="btn-primary btn-add">
             <i className="fas fa-plus me-1"></i>
             Создать статью
           </Link>

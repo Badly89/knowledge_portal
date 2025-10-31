@@ -4,8 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import companyLogo from '../img/logo.png';
 
-
-
 function Dashboard() {
   const [stats, setStats] = useState({
     totalArticles: 0,
@@ -15,23 +13,37 @@ function Dashboard() {
   const [categories, setCategories] = useState([]);
   const [categoryStats, setCategoryStats] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { user, isAuthenticated } = useAuth();
+
+
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
     fetchAllData();
   }, []);
 
   const fetchAllData = async () => {
+    if (isFetching) return;
+
     try {
+      setIsFetching(true);
       setLoading(true);
+      setError(null);
 
       const [articlesRes, categoriesRes] = await Promise.all([
-        axios.get('/api/articles'),
-        axios.get('/api/categories')
+        axios.get('/api/articles').catch(error => {
+          console.error('Ошибка загрузки статей:', error);
+          return { data: [] };
+        }),
+        axios.get('/api/categories').catch(error => {
+          console.error('Ошибка загрузки категорий:', error);
+          return { data: [] };
+        })
       ]);
 
-      const articles = articlesRes.data;
-      const categories = categoriesRes.data;
+      const articles = articlesRes?.data || [];
+      const categories = categoriesRes?.data || [];
 
       // Подсчет статистики
       const stats = {};
@@ -193,12 +205,12 @@ function Dashboard() {
                 <span>Поиск статей</span>
               </Link>
 
-              {!isAuthenticated && (
+              {/* {!isAuthenticated && (
                 <Link to="/login" className="action-btn highlight">
                   <i className="fas fa-sign-in-alt me-2"></i>
                   <span>Войти в систему</span>
                 </Link>
-              )}
+              )} */}
 
               {/* Функционал администратора */}
               {isAuthenticated && user?.role === 'admin' && (

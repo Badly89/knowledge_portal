@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import '../styles/Categories.css'; // Импортируем CSS файл
 
 function Categories() {
   const [categories, setCategories] = useState([]);
@@ -24,7 +25,12 @@ function Categories() {
   };
 
   if (loading) {
-    return <div className="loading">Загрузка категорий...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Загрузка категорий...</p>
+      </div>
+    );
   }
 
   return (
@@ -32,48 +38,48 @@ function Categories() {
       <div className="page-header">
         <div className="header-content">
           <h1>Категории статей</h1>
-          <p>Просматривайте статьи по категориям для удобного поиска информации</p>
         </div>
         {isAuthenticated && user?.role === 'admin' && (
-          <Link to="/categories/manage" className="btn-primary">
-            ⚙️ Управление категориями
+          <Link to="/categories/manage" className="btn-admin">
+            <span className="btn-icon">⚙️</span>
+            Управление категориями
           </Link>
         )}
       </div>
 
-      <div className="categories-grid-view">
+      <div className="categories-container">
         {categories.length === 0 ? (
-          <div className="no-categories">
-            <p>Категории отсутствуют.</p>
+          <div className="empty-state">
+            <div className="empty-icon">📚</div>
+            <h3>Категории отсутствуют</h3>
+            <p>Здесь пока нет ни одной категории статей</p>
             {isAuthenticated && user?.role === 'admin' && (
               <Link to="/categories/manage" className="btn-primary">
-                Создать категории
+                Создать первую категорию
               </Link>
             )}
           </div>
         ) : (
-          categories.map(category => (
-            <div key={category.id} className="category-card-view">
-              <div className="category-content">
-                <h3 className="category-name">{category.name}</h3>
-                {category.description && (
-                  <p className="category-description">{category.description}</p>
-                )}
-                <div className="category-meta">
-                  <span>Статей в категории</span>
-                  <span>Создано: {new Date(category.created_at).toLocaleDateString('ru-RU')}</span>
+          <div className="categories-grid">
+            {categories.map(category => (
+              <Link
+                key={category.id}
+                to={`/articles?category=${category.id}`}
+                className="btn-explore"
+              >
+                <div className="category-card">
+
+                  <div className="card-content">
+                    <h3 className="category-title">{category.name}</h3>
+                    {category.description && (
+                      <p className="category-description">{category.description}</p>
+                    )}
+                  </div>
+                  <div className="card-hover-effect"></div>
                 </div>
-              </div>
-              <div className="category-actions">
-                <Link
-                  to={`/articles?category=${category.id}`}
-                  className="btn-view-category"
-                >
-                  📖 Смотреть статьи
-                </Link>
-              </div>
-            </div>
-          ))
+              </Link>
+            ))}
+          </div>
         )}
       </div>
     </div>
