@@ -5,6 +5,30 @@ import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
 
+// Вспомогательная функция для преобразования BigInt в Number
+const convertBigIntToNumber = (obj) => {
+  if (obj === null || obj === undefined) return obj;
+
+  if (typeof obj === 'bigint') {
+    return Number(obj);
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(convertBigIntToNumber);
+  }
+
+  if (typeof obj === 'object') {
+    const newObj = {};
+    for (const key in obj) {
+      newObj[key] = convertBigIntToNumber(obj[key]);
+    }
+    return newObj;
+  }
+
+  return obj;
+};
+
+
 // Вспомогательная функция для безопасной обработки JSON
 const safeJSONParse = (data) => {
   if (!data) return [];
@@ -309,23 +333,26 @@ router.get('/stats/categories', async (req, res) => {
       GROUP BY c.id, c.name
       ORDER BY c.name
     `);
-    console.log('Статистика категорий:', stats); // Добавим лог для отладки
+
+    console.log('Статистика категорий:', stats);
 
     // Преобразуем в объект для удобства
     const statsObj = {};
     stats.forEach(stat => {
-      statsObj[stat.category_id] = parseInt(stat.article_count);
+      statsObj[stat.category_id] = Number(stat.article_count);
     });
 
     res.json(statsObj);
   } catch (error) {
-    console.error('Ошибка получения статистики:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    console.error('Ошибка получения статистики категорий:', error);
+    res.status(500).json({
+      error: 'Внутренняя ошибка сервера',
+      details: error.message
+    });
   } finally {
     if (conn) conn.release();
   }
 });
-
 // Получить общую статистику для панели управления
 router.get('/management/stats', async (req, res) => {
   let conn;
@@ -333,40 +360,57 @@ router.get('/management/stats', async (req, res) => {
     conn = await getConnection();
 
     // Общее количество статей
-    const totalArticles = await conn.query('SELECT COUNT(*) as count FROM articles');
+    const totalArticlesResult = await conn.query('SELECT COUNT(*) as count FROM articles');
+    const totalArticles = Number(totalArticlesResult[0].count);
 
     // Количество категорий со статьями (активные категории)
-    const activeCategories = await conn.query(`
+    const activeCategoriesResult = await conn.query(`
       SELECT COUNT(DISTINCT category_id) as count 
       FROM articles 
       WHERE category_id IS NOT NULL
     `);
+    const activeCategories = Number(activeCategoriesResult[0].count);
 
     // Общее количество категорий
-    const totalCategories = await conn.query('SELECT COUNT(*) as count FROM categories');
+    const totalCategoriesResult = await conn.query('SELECT COUNT(*) as count FROM categories');
+    const totalCategories = Number(totalCategoriesResult[0].count);
 
-    // Последние созданные статьи
-    const recentArticles = await conn.query(`
-      SELECT title, created_at 
+    // Статьи с файлами
+    const articlesWithFilesResult = await conn.query(`
+      SELECT COUNT(*) as count 
       FROM articles 
-      ORDER BY created_at DESC 
-      LIMIT 5
+      WHERE files IS NOT NULL AND files != '[]' AND files != ''
     `);
+    const articlesWithFiles = Number(articlesWithFilesResult[0].count);
 
-    res.json({
-      totalArticles: totalArticles[0].count,
-      activeCategories: activeCategories[0].count,
-      totalCategories: totalCategories[0].count,
-      recentArticlesCount: recentArticles.length
-    });
+    // Статьи с изображениями
+    const articlesWithImagesResult = await conn.query(`
+      SELECT COUNT(*) as count 
+      FROM articles 
+      WHERE images IS NOT NULL AND images != '[]' AND images != ''
+    `);
+    const articlesWithImages = Number(articlesWithImagesResult[0].count);
+
+    const stats = {
+      totalArticles: totalArticles,
+      activeCategories: activeCategories,
+      totalCategories: totalCategories,
+      articlesWithFiles: articlesWithFiles,
+      articlesWithImages: articlesWithImages,
+      timestamp: new Date().toISOString()
+    };
+
+    res.json(stats);
   } catch (error) {
     console.error('Ошибка получения общей статистики:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    res.status(500).json({
+      error: 'Внутренняя ошибка сервера',
+      details: error.message
+    });
   } finally {
     if (conn) conn.release();
   }
 });
-
 // Поиск статей
 router.get('/search', async (req, res) => {
   let conn;
@@ -498,7 +542,7 @@ router.get('/stats/categories/simple', async (req, res) => {
 
     const statsObj = {};
     stats.forEach(item => {
-      statsObj[item.category_id] = parseInt(item.count);
+      statsObj[item.category_id] = Number(item.count);
     });
 
     res.json(statsObj);
@@ -506,6 +550,48 @@ router.get('/stats/categories/simple', async (req, res) => {
     console.error('Ошибка получения простой статистики категорий:', error);
     // Возвращаем пустой объект вместо ошибки
     res.json({});
+  } finally {
+    if (conn) conn.release();
+  }
+});
+// Простая статистика для управления категориями
+router.get('/stats/simple', async (req, res) => {
+  let conn;
+  try {
+    conn = await getConnection();
+
+    // Простой запрос для подсчета статей по категориям
+    const stats = await conn.query(`
+      SELECT category_id, COUNT(*) as count 
+      FROM articles 
+      WHERE category_id IS NOT NULL 
+      GROUP BY category_id
+    `);
+
+    const statsObj = {};
+    stats.forEach(item => {
+      statsObj[item.category_id] = Number(item.count);
+    });
+
+    // Общее количество статей
+    const totalArticlesResult = await conn.query('SELECT COUNT(*) as count FROM articles');
+    const totalArticles = Number(totalArticlesResult[0].count);
+
+    const result = {
+      categoryStats: statsObj,
+      totalArticles: totalArticles,
+      activeCategories: stats.length
+    };
+
+    res.json(result);
+  } catch (error) {
+    console.error('Ошибка получения простой статистики:', error);
+    // Возвращаем пустые данные вместо ошибки
+    res.json({
+      categoryStats: {},
+      totalArticles: 0,
+      activeCategories: 0
+    });
   } finally {
     if (conn) conn.release();
   }

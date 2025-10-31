@@ -9,13 +9,36 @@ router.get('/', async (req, res) => {
   let conn;
   try {
     conn = await getConnection();
+
+    // Сначала получаем категории
     const categories = await conn.query(`
       SELECT c.*, u.username as created_by_name 
       FROM categories c 
       LEFT JOIN users u ON c.created_by = u.id 
       ORDER BY c.name
     `);
-    res.json(categories);
+
+    // Затем получаем количество статей для каждой категории
+    const articleCounts = await conn.query(`
+      SELECT category_id, COUNT(*) as article_count 
+      FROM articles 
+      WHERE category_id IS NOT NULL 
+      GROUP BY category_id
+    `);
+
+    // Создаем маппинг category_id -> article_count
+    const countMap = {};
+    articleCounts.forEach(item => {
+      countMap[item.category_id] = Number(item.article_count);
+    });
+
+    // Объединяем данные
+    const categoriesWithCounts = categories.map(category => ({
+      ...category,
+      article_count: countMap[category.id] || 0
+    }));
+
+    res.json(categoriesWithCounts);
   } catch (error) {
     console.error('Ошибка получения категорий:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
@@ -42,7 +65,19 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Категория не найдена' });
     }
 
-    res.json(categories[0]);
+    // Получаем количество статей для этой категории
+    const articleCount = await conn.query(`
+      SELECT COUNT(*) as article_count 
+      FROM articles 
+      WHERE category_id = ?
+    `, [id]);
+
+    const categoryWithCount = {
+      ...categories[0],
+      article_count: Number(articleCount[0].article_count)
+    };
+
+    res.json(categoryWithCount);
   } catch (error) {
     console.error('Ошибка получения категории:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
@@ -76,7 +111,13 @@ router.post('/', optionalAuth, isAdmin, async (req, res) => {
       WHERE c.id = ?
     `, [result.insertId]);
 
-    res.status(201).json(newCategory[0]);
+    // Добавляем article_count = 0 для новой категории
+    const categoryWithCount = {
+      ...newCategory[0],
+      article_count: 0
+    };
+
+    res.status(201).json(categoryWithCount);
   } catch (error) {
     console.error('Ошибка создания категории:', error);
     if (error.code === 'ER_DUP_ENTRY') {
@@ -126,7 +167,19 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
       WHERE c.id = ?
     `, [id]);
 
-    res.json(updatedCategory[0]);
+    // Получаем количество статей
+    const articleCount = await conn.query(`
+      SELECT COUNT(*) as article_count 
+      FROM articles 
+      WHERE category_id = ?
+    `, [id]);
+
+    const categoryWithCount = {
+      ...updatedCategory[0],
+      article_count: Number(articleCount[0].article_count)
+    };
+
+    res.json(categoryWithCount);
   } catch (error) {
     console.error('Ошибка обновления категории:', error);
     if (error.code === 'ER_DUP_ENTRY') {
@@ -138,6 +191,7 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
     if (conn) conn.release();
   }
 });
+
 
 // Удалить категорию (только для администраторов)
 router.delete('/:id', optionalAuth, isAdmin, async (req, res) => {
@@ -198,7 +252,7 @@ router.get('/stats/articles', async (req, res) => {
 
     const statsObj = {};
     stats.forEach(stat => {
-      statsObj[stat.id] = parseInt(stat.article_count);
+      statsObj[stat.id] = Number(stat.article_count);
     });
 
     res.json(statsObj);

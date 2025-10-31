@@ -938,10 +938,11 @@ tr:hover {
   padding: 0.25rem;
   border-radius: 4px;
   transition: background-color 0.3s;
+  color: #000;
 }
 
 .btn-edit:hover {
-  background-color: #ebf5fb;
+  background-color: #203d4e;
 }
 
 .btn-delete:hover {

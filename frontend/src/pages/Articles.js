@@ -152,9 +152,9 @@ function Articles() {
           </select>
 
           {selectedCategory && (
-            <button onClick={clearFilter} className="clear-filter-btn">
-              <i className="fas fa-times me-1"></i>
-              Сбросить
+            <button onClick={clearFilter} className="clear-filter-btn ">
+              <i className="fas fa-times"></i>
+
             </button>
           )}
         </div>

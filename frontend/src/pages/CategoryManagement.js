@@ -194,23 +194,8 @@ function CategoryManagement() {
           <p>Создавайте, редактируйте и удаляйте категории статей</p>
         </div>
         <div className="header-actions">
-          <Link to="/categories" className="btn-secondary">
-            <i className="fas fa-folder me-1"></i>
-            Все категории
-          </Link>
-          <button
-            onClick={() => {
-              setShowCreateForm(true);
-              setEditingCategory(null);
-              setCategoryForm({ name: '', description: '' });
-              setError('');
-              setSuccess('');
-            }}
-            className="btn-primary"
-          >
-            <i className="fas fa-plus me-1"></i>
-            Новая категория
-          </button>
+
+
         </div>
       </div>
 
@@ -271,52 +256,7 @@ function CategoryManagement() {
         </div>
       )}
 
-      {/* Статистика */}
-      {/* <div className="management-stats">
-        <div className="stat-card">
-          <div className="stat-icon">
-            <i className="fas fa-folder"></i>
-          </div>
-          <div className="stat-info">
-            <h3>Всего категорий</h3>
-            <p className="stat-number">{categories.length}</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">
-            <i className="fas fa-book"></i>
-          </div>
-          <div className="stat-info">
-            <h3>Всего статей</h3>
-            <p className="stat-number">{getTotalArticles()}</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">
-            <i className="fas fa-chart-bar"></i>
-          </div>
-          <div className="stat-info">
-            <h3>Активных категорий</h3>
-            <p className="stat-number">{getActiveCategoriesCount()}</p>
-            <small>Категории со статьями</small>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">
-            <i className="fas fa-chart-line"></i>
-          </div>
-          <div className="stat-info">
-            <h3>Заполненность</h3>
-            <p className="stat-number">
-              {categories.length > 0
-                ? `${Math.round((getActiveCategoriesCount() / categories.length) * 100)}%`
-                : '0%'
-              }
-            </p>
-            <small>Категорий с контентом</small>
-          </div>
-        </div>
-      </div> */}
+
 
       {/* Список категорий */}
       <div className="categories-management-list">
@@ -325,16 +265,23 @@ function CategoryManagement() {
             <i className="fas fa-list me-2"></i>
             Список категорий
           </h2>
-          {/* <div className="header-stats">
-            <span className="total-count">
-              <i className="fas fa-folder me-1"></i>
-              {categories.length} категорий
-            </span>
-            <span className="active-count">
-              <i className="fas fa-check-circle me-1"></i>
-              {getActiveCategoriesCount()} с статьями
-            </span>
-          </div> */}
+          <div className='wrap-btn_add'>
+            <button
+              onClick={() => {
+                setShowCreateForm(true);
+                setEditingCategory(null);
+                setCategoryForm({ name: '', description: '' });
+                setError('');
+                setSuccess('');
+              }}
+              className="btn-primary"
+              title='добавить категорию'
+            >
+
+              <i className="fas fa-plus me-1 dflex"></i>
+
+            </button>
+          </div>
         </div>
 
         {categories.length === 0 ? (
@@ -423,7 +370,7 @@ function CategoryManagement() {
                             className="btn-action btn-edit"
                             title="Редактировать"
                           >
-                            <i className="fas fa-edit"></i>
+                            <i className="fa-solid fa-pencil"></i>
                           </button>
                           <button
                             onClick={() => handleDeleteCategory(category.id, category.name)}
