@@ -252,7 +252,7 @@ router.get('/stats/articles', async (req, res) => {
 
     const statsObj = {};
     stats.forEach(stat => {
-      statsObj[stat.id] = Number(stat.article_count);
+      statsObj[stat.id] = parseInt(stat.article_count);
     });
 
     res.json(statsObj);
@@ -266,5 +266,7 @@ router.get('/stats/articles', async (req, res) => {
     if (conn) conn.release();
   }
 });
+
+
 
 export default router;

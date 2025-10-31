@@ -12,10 +12,12 @@ function EditArticle() {
   const [content, setContent] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [categories, setCategories] = useState([]);
-  const [files, setFiles] = useState([]);
-  const [images, setImages] = useState([]);
+  const [newFiles, setNewFiles] = useState([]);
+  const [newImages, setNewImages] = useState([]);
   const [existingFiles, setExistingFiles] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
+  const [filesToRemove, setFilesToRemove] = useState([]);
+  const [imagesToRemove, setImagesToRemove] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -29,7 +31,6 @@ function EditArticle() {
     fetchArticle();
     fetchCategories();
   }, [id, isAuthenticated, user, navigate]);
-
 
   // Безопасное получение данных
   const safeParseJSON = (data) => {
@@ -56,9 +57,7 @@ function EditArticle() {
       const parsedImages = safeParseJSON(article.images);
 
       setExistingFiles(parsedFiles);
-      setFiles(parsedFiles);
       setExistingImages(parsedImages);
-      setImages(parsedImages);
     } catch (error) {
       console.error('Ошибка загрузки статьи:', error);
       setError('Не удалось загрузить статью для редактирования');
@@ -76,7 +75,7 @@ function EditArticle() {
     }
   };
 
-  const handleFileUpload = (e, type) => {
+  const handleNewFileUpload = (e, type) => {
     const selectedFiles = Array.from(e.target.files);
 
     selectedFiles.forEach(file => {
@@ -91,22 +90,41 @@ function EditArticle() {
         };
 
         if (type === 'file') {
-          setFiles(prev => [...prev, fileData]);
+          setNewFiles(prev => [...prev, fileData]);
         } else {
-          setImages(prev => [...prev, fileData]);
+          setNewImages(prev => [...prev, fileData]);
         }
       };
 
       reader.readAsDataURL(file);
     });
+
+    // Сбрасываем значение input для возможности повторной загрузки тех же файлов
+    e.target.value = '';
   };
 
-  const removeFile = (index, type) => {
+  const removeExistingFile = (fileId) => {
+    setFilesToRemove(prev => [...prev, fileId]);
+  };
+
+  const removeExistingImage = (imageId) => {
+    setImagesToRemove(prev => [...prev, imageId]);
+  };
+
+  const removeNewFile = (index, type) => {
     if (type === 'file') {
-      setFiles(prev => prev.filter((_, i) => i !== index));
+      setNewFiles(prev => prev.filter((_, i) => i !== index));
     } else {
-      setImages(prev => prev.filter((_, i) => i !== index));
+      setNewImages(prev => prev.filter((_, i) => i !== index));
     }
+  };
+
+  const restoreExistingFile = (fileId) => {
+    setFilesToRemove(prev => prev.filter(id => id !== fileId));
+  };
+
+  const restoreExistingImage = (imageId) => {
+    setImagesToRemove(prev => prev.filter(id => id !== imageId));
   };
 
   const handleSubmit = async (e) => {
@@ -115,20 +133,41 @@ function EditArticle() {
     setError('');
 
     try {
-      await axios.put(`/api/articles/${id}`, {
+      const response = await axios.put(`/api/articles/${id}`, {
         title,
         content,
         category_id: categoryId,
-        files,
-        images
+        files: newFiles,
+        images: newImages,
+        filesToRemove,
+        imagesToRemove
       });
 
+      console.log('Статья обновлена:', response.data);
       navigate('/articles/manage');
     } catch (error) {
       console.error('Ошибка обновления статьи:', error);
       setError(error.response?.data?.error || 'Не удалось обновить статью');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const downloadFile = async (fileId, fileName) => {
+    try {
+      const response = await axios.get(`/api/articles/${id}/files/${fileId}/download`);
+      const fileData = response.data;
+
+      // Создаем временную ссылку для скачивания
+      const link = document.createElement('a');
+      link.href = `data:${fileData.type};base64,${fileData.data}`;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Ошибка скачивания файла:', error);
+      setError('Не удалось скачать файл');
     }
   };
 
@@ -139,6 +178,10 @@ function EditArticle() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
+
+  // Фильтруем существующие файлы и изображения для отображения
+  const displayFiles = existingFiles.filter(file => !filesToRemove.includes(file.id));
+  const displayImages = existingImages.filter(image => !imagesToRemove.includes(image.id));
 
   if (!isAuthenticated || user?.role !== 'admin') {
     return null;
@@ -201,28 +244,93 @@ function EditArticle() {
           />
         </div>
 
+        {/* Существующие файлы */}
         <div className="form-group">
-          <label>Файлы</label>
-          <div className="file-upload-section">
+          <label>Существующие файлы</label>
+          <div className="existing-files-section">
+            {displayFiles.length === 0 ? (
+              <p className="no-files">Нет прикрепленных файлов</p>
+            ) : (
+              <div className="files-list">
+                <h4>Текущие файлы:</h4>
+                <ul className="files-list">
+                  {displayFiles.map((file) => (
+                    <li key={file.id} className="file-item existing">
+                      <div className="file-info">
+                        <span className="file-name">📎 {file.name}</span>
+                        <span className="file-size">({formatFileSize(file.size)})</span>
+                      </div>
+                      <div className="file-actions">
+                        <button
+                          type="button"
+                          onClick={() => downloadFile(file.id, file.name)}
+                          className="download-file-btn"
+                          title="Скачать файл"
+                        >
+                          ⬇️
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeExistingFile(file.id)}
+                          className="remove-file-btn"
+                          title="Удалить файл"
+                        >
+                          ❌
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Удаленные файлы (можно восстановить) */}
+            {filesToRemove.length > 0 && (
+              <div className="removed-files">
+                <h4>Файлы, отмеченные для удаления:</h4>
+                <ul className="files-list">
+                  {existingFiles
+                    .filter(file => filesToRemove.includes(file.id))
+                    .map((file) => (
+                      <li key={file.id} className="file-item removed">
+                        <span className="file-name">🗑️ {file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => restoreExistingFile(file.id)}
+                          className="restore-file-btn"
+                          title="Восстановить файл"
+                        >
+                          ↩️
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Новые файлы */}
+        <div className="form-group">
+          <label>Добавить новые файлы</label>
+          <div className="new-files-section">
             <input
               type="file"
               multiple
-              onChange={(e) => handleFileUpload(e, 'file')}
+              onChange={(e) => handleNewFileUpload(e, 'file')}
               className="file-input"
             />
-            <div className="file-list">
-              <h4>Прикрепленные файлы:</h4>
-              {files.length === 0 ? (
-                <p className="no-files">Файлы не прикреплены</p>
-              ) : (
+            {newFiles.length > 0 && (
+              <div className="new-files-list">
+                <h4>Новые файлы для загрузки:</h4>
                 <ul className="files-list">
-                  {files.map((file, index) => (
-                    <li key={index} className="file-item">
-                      <span className="file-name">📎 {file.name}</span>
+                  {newFiles.map((file, index) => (
+                    <li key={index} className="file-item new">
+                      <span className="file-name">🆕 {file.name}</span>
                       <span className="file-size">({formatFileSize(file.size)})</span>
                       <button
                         type="button"
-                        onClick={() => removeFile(index, 'file')}
+                        onClick={() => removeNewFile(index, 'file')}
                         className="remove-file-btn"
                         title="Удалить файл"
                       >
@@ -231,29 +339,23 @@ function EditArticle() {
                     </li>
                   ))}
                 </ul>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Существующие изображения */}
         <div className="form-group">
-          <label>Изображения</label>
-          <div className="image-upload-section">
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={(e) => handleFileUpload(e, 'image')}
-              className="file-input"
-            />
-            <div className="image-list">
-              <h4>Прикрепленные изображения:</h4>
-              {images.length === 0 ? (
-                <p className="no-images">Изображения не прикреплены</p>
-              ) : (
+          <label>Существующие изображения</label>
+          <div className="existing-images-section">
+            {displayImages.length === 0 ? (
+              <p className="no-images">Нет прикрепленных изображений</p>
+            ) : (
+              <div className="images-grid">
+                <h4>Текущие изображения:</h4>
                 <div className="images-grid">
-                  {images.map((image, index) => (
-                    <div key={index} className="image-item">
+                  {displayImages.map((image) => (
+                    <div key={image.id} className="image-item existing">
                       <img
                         src={`data:${image.type};base64,${image.data}`}
                         alt={image.name}
@@ -261,9 +363,91 @@ function EditArticle() {
                       />
                       <div className="image-info">
                         <span className="image-name">{image.name}</span>
+                        <div className="image-actions">
+                          <button
+                            type="button"
+                            onClick={() => downloadFile(image.id, image.name)}
+                            className="download-image-btn"
+                            title="Скачать изображение"
+                          >
+                            ⬇️
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeExistingImage(image.id)}
+                            className="remove-image-btn"
+                            title="Удалить изображение"
+                          >
+                            ❌
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Удаленные изображения (можно восстановить) */}
+            {imagesToRemove.length > 0 && (
+              <div className="removed-images">
+                <h4>Изображения, отмеченные для удаления:</h4>
+                <div className="images-grid">
+                  {existingImages
+                    .filter(image => imagesToRemove.includes(image.id))
+                    .map((image) => (
+                      <div key={image.id} className="image-item removed">
+                        <img
+                          src={`data:${image.type};base64,${image.data}`}
+                          alt={image.name}
+                          className="preview-image removed"
+                        />
+                        <div className="image-info">
+                          <span className="image-name">🗑️ {image.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => restoreExistingImage(image.id)}
+                            className="restore-image-btn"
+                            title="Восстановить изображение"
+                          >
+                            ↩️
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Новые изображения */}
+        <div className="form-group">
+          <label>Добавить новые изображения</label>
+          <div className="new-images-section">
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={(e) => handleNewFileUpload(e, 'image')}
+              className="file-input"
+            />
+            {newImages.length > 0 && (
+              <div className="new-images-list">
+                <h4>Новые изображения для загрузки:</h4>
+                <div className="images-grid">
+                  {newImages.map((image, index) => (
+                    <div key={index} className="image-item new">
+                      <img
+                        src={`data:${image.type};base64,${image.data}`}
+                        alt={image.name}
+                        className="preview-image"
+                      />
+                      <div className="image-info">
+                        <span className="image-name">🆕 {image.name}</span>
                         <button
                           type="button"
-                          onClick={() => removeFile(index, 'image')}
+                          onClick={() => removeNewFile(index, 'image')}
                           className="remove-image-btn"
                           title="Удалить изображение"
                         >
@@ -273,8 +457,8 @@ function EditArticle() {
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -287,6 +471,19 @@ function EditArticle() {
           </Link>
         </div>
       </form>
+
+      {/* Статистика изменений */}
+      {(newFiles.length > 0 || newImages.length > 0 || filesToRemove.length > 0 || imagesToRemove.length > 0) && (
+        <div className="changes-summary">
+          <h3>Сводка изменений:</h3>
+          <ul>
+            {newFiles.length > 0 && <li>📎 Добавлено файлов: {newFiles.length}</li>}
+            {filesToRemove.length > 0 && <li>🗑️ Удалено файлов: {filesToRemove.length}</li>}
+            {newImages.length > 0 && <li>🖼️ Добавлено изображений: {newImages.length}</li>}
+            {imagesToRemove.length > 0 && <li>🗑️ Удалено изображений: {imagesToRemove.length}</li>}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

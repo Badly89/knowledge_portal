@@ -80,6 +80,29 @@ function Articles() {
     }
   };
 
+  // Безопасное форматирование даты
+  const formatDate = (dateString) => {
+    try {
+      if (!dateString) return 'Дата не указана';
+
+      const date = new Date(dateString);
+
+      // Проверяем, что дата валидна
+      if (isNaN(date.getTime())) {
+        return 'Неверная дата';
+      }
+
+      return date.toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Ошибка форматирования даты:', error);
+      return 'Ошибка даты';
+    }
+  };
+
   const handleCategoryChange = (e) => {
     const categoryId = e.target.value;
     setSelectedCategory(categoryId);
@@ -171,6 +194,7 @@ function Articles() {
       </div>
 
       <div className="articles-list">
+
         {filteredArticles.length === 0 ? (
           <div className="no-articles">
             <i className="fas fa-inbox fa-3x mb-3"></i>
@@ -200,56 +224,58 @@ function Articles() {
             const images = getImages(article);
 
             return (
-              <article key={article.id} className="article-card">
-                <div className="article-header">
-                  <h2 className="article-title">{article.title}</h2>
-                  <div className="article-meta">
+
+
+              <Link
+                key={article.id}
+                to={`/articles/${article.id}`}
+                className="read-more-btn"
+
+              >
+                <article className="article-card">
+                  <div className="article-header">
+                    <h2 className="article-title">{article.title}</h2>
                     <span className="category-badge">
                       <i className="fas fa-folder me-1"></i>
                       {article.category_name}
                     </span>
-                    <span className="author">
-                      <i className="fas fa-user me-1"></i>
-                      Автор: {article.author_name}
-                    </span>
-                    <span className="date">
-                      <i className="fas fa-calendar me-1"></i>
-                      {new Date(article.created_at).toLocaleDateString('ru-RU')}
-                    </span>
+
+                    <div className="article-attachments">
+                      {files.length > 0 && (
+                        <span className="attachments-count">
+                          <i className="fas fa-paperclip me-1"></i>
+                          {files.length} файл(ов)
+                        </span>
+                      )}
+                      {images.length > 0 && (
+                        <span className="images-count">
+                          <i className="fas fa-image me-1"></i>
+                          {images.length} изображений
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div className="article-content">
-                  <p>{getArticleExcerpt(article.content)}</p>
-                </div>
+                  <div className="article-footer">
 
-                <div className="article-footer">
-                  <div className="article-attachments">
-                    {files.length > 0 && (
-                      <span className="attachments-count">
-                        <i className="fas fa-paperclip me-1"></i>
-                        {files.length} файл(ов)
+
+                    <div className="article-meta">
+
+                      <span className="author">
+                        <i className="fas fa-user me-1"></i>
+                        Автор: {article.author_name}
                       </span>
-                    )}
-                    {images.length > 0 && (
-                      <span className="images-count">
-                        <i className="fas fa-image me-1"></i>
-                        {images.length} изображений
+                      <span className="date">
+                        <i className="fas fa-calendar me-1"></i>
+                        {formatDate(article.created_at)}
                       </span>
-                    )}
-                  </div>
+                    </div>
 
-                  <div className="article-actions">
-                    <Link
-                      to={`/articles/${article.id}`}
-                      className="read-more-btn"
-                    >
-                      <i className="fas fa-eye me-1"></i>
-                      Читать далее
-                    </Link>
+
                   </div>
-                </div>
-              </article>
+                </article>
+              </Link>
+
             );
           })
         )}

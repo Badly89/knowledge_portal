@@ -18,77 +18,44 @@ function Dashboard() {
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    fetchDashboardData();
-    fetchCategories();
-    fetchCategoryStats();
+    fetchAllData();
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchAllData = async () => {
     try {
+      setLoading(true);
+
       const [articlesRes, categoriesRes] = await Promise.all([
         axios.get('/api/articles'),
         axios.get('/api/categories')
       ]);
 
-      const recentArticles = articlesRes.data.slice(0, 5);
+      const articles = articlesRes.data;
+      const categories = categoriesRes.data;
+
+      // Подсчет статистики
+      const stats = {};
+      articles.forEach(article => {
+        if (article.category_id) {
+          stats[article.category_id] = (stats[article.category_id] || 0) + 1;
+        }
+      });
+
+      const recentArticles = articles.slice(0, 5);
 
       setStats({
-        totalArticles: articlesRes.data.length,
-        totalCategories: categoriesRes.data.length,
+        totalArticles: articles.length,
+        totalCategories: categories.length,
         recentArticles
       });
+
+      setCategories(categories);
+      setCategoryStats(stats);
+
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get('/api/categories');
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Ошибка загрузки категорий:', error);
-    }
-  };
-
-  const fetchCategoryStats = async () => {
-    try {
-      // Сначала пробуем получить статистику из endpoint
-      const response = await axios.get('/api/articles/stats/categories/simple');
-      setCategoryStats(response.data);
-    } catch (error) {
-      console.warn('Endpoint статистики недоступен, проверяем данные категорий');
-
-      // Пробуем использовать article_count из данных категорий (если есть)
-      const statsFromCategories = {};
-      categories.forEach(category => {
-        if (category.article_count !== undefined) {
-          statsFromCategories[category.id] = category.article_count;
-        }
-      });
-
-      if (Object.keys(statsFromCategories).length > 0) {
-        setCategoryStats(statsFromCategories);
-      } else {
-        // Если и это не сработало, используем ручной подсчет
-        try {
-          const articlesResponse = await axios.get('/api/articles');
-          const articles = articlesResponse.data;
-
-          const stats = {};
-          articles.forEach(article => {
-            if (article.category_id) {
-              stats[article.category_id] = (stats[article.category_id] || 0) + 1;
-            }
-          });
-          setCategoryStats(stats);
-        } catch (fallbackError) {
-          console.error('Все методы не сработали:', fallbackError);
-          setCategoryStats({});
-        }
-      }
     }
   };
 
