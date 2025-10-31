@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import companyLogo from '../img/logo.png';
+
+
 
 function Dashboard() {
   const [stats, setStats] = useState({
@@ -10,12 +13,14 @@ function Dashboard() {
     recentArticles: []
   });
   const [categories, setCategories] = useState([]);
+  const [categoryStats, setCategoryStats] = useState({});
   const [loading, setLoading] = useState(true);
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     fetchDashboardData();
     fetchCategories();
+    fetchCategoryStats();
   }, []);
 
   const fetchDashboardData = async () => {
@@ -48,6 +53,50 @@ function Dashboard() {
     }
   };
 
+  const fetchCategoryStats = async () => {
+    try {
+      // Сначала пробуем получить статистику из endpoint
+      const response = await axios.get('/api/articles/stats/categories/simple');
+      setCategoryStats(response.data);
+    } catch (error) {
+      console.warn('Endpoint статистики недоступен, проверяем данные категорий');
+
+      // Пробуем использовать article_count из данных категорий (если есть)
+      const statsFromCategories = {};
+      categories.forEach(category => {
+        if (category.article_count !== undefined) {
+          statsFromCategories[category.id] = category.article_count;
+        }
+      });
+
+      if (Object.keys(statsFromCategories).length > 0) {
+        setCategoryStats(statsFromCategories);
+      } else {
+        // Если и это не сработало, используем ручной подсчет
+        try {
+          const articlesResponse = await axios.get('/api/articles');
+          const articles = articlesResponse.data;
+
+          const stats = {};
+          articles.forEach(article => {
+            if (article.category_id) {
+              stats[article.category_id] = (stats[article.category_id] || 0) + 1;
+            }
+          });
+          setCategoryStats(stats);
+        } catch (fallbackError) {
+          console.error('Все методы не сработали:', fallbackError);
+          setCategoryStats({});
+        }
+      }
+    }
+  };
+
+  // Функция для получения количества статей в категории
+  const getArticleCount = (categoryId) => {
+    return categoryStats[categoryId] || 0;
+  };
+
   if (loading) {
     return (
       <div className="dashboard-loading">
@@ -60,10 +109,12 @@ function Dashboard() {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>
-          <i className="fas fa-book-open me-2"></i>
-          Единая база знаний Администрации города Ноябрьска
-        </h1>
+        <div className='wrap-header'>
+          <img src={companyLogo} alt="BigCo Inc. logo" className="img_logo me-2" />
+          <h1>
+            Единая база знаний Администрации города Ноябрьска
+          </h1>
+        </div>
         <p>
           {isAuthenticated
             ? `С возвращением, ${user?.username}!`
@@ -115,7 +166,7 @@ function Dashboard() {
                     <div className="category-meta">
                       <span className="article-count">
                         <i className="fas fa-file me-1"></i>
-                        Статей: {category.article_count || 0}
+                        Статей: {getArticleCount(category.id)}
                       </span>
                     </div>
                   </div>
@@ -127,11 +178,33 @@ function Dashboard() {
             </div>
           )}
 
+          {/* Последние статьи под категориями */}
 
         </div>
 
         {/* Правая часть - Быстрые действия */}
         <div className="quick-actions-sidebar">
+          {/* Быстрые ссылки */}
+          <div className="sidebar-section">
+            <h3>
+              <i className="fas fa-link me-2"></i>
+              Быстрые ссылки
+            </h3>
+            <div className="quick-links">
+              <Link to="/articles?sort=recent" className="quick-link">
+                <i className="fas fa-fire me-2"></i>
+                Новые статьи
+              </Link>
+              <Link to="/articles?sort=popular" className="quick-link">
+                <i className="fas fa-star me-2"></i>
+                Популярные
+              </Link>
+              <Link to="/help" className="quick-link">
+                <i className="fas fa-question-circle me-2"></i>
+                Помощь
+              </Link>
+            </div>
+          </div>
           <div className="sidebar-section">
             <h3>
               <i className="fas fa-bolt me-2"></i>
@@ -153,7 +226,12 @@ function Dashboard() {
                 <span>Поиск статей</span>
               </Link>
 
-
+              {!isAuthenticated && (
+                <Link to="/login" className="action-btn highlight">
+                  <i className="fas fa-sign-in-alt me-2"></i>
+                  <span>Войти в систему</span>
+                </Link>
+              )}
 
               {/* Функционал администратора */}
               {isAuthenticated && user?.role === 'admin' && (
@@ -179,22 +257,7 @@ function Dashboard() {
                       <span>Управление категориями</span>
                     </Link>
 
-                    <div className="admin-stats">
-                      <div className="admin-stat">
-                        <i className="fas fa-chart-bar me-2"></i>
-                        <span>Статистика системы</span>
-                      </div>
-                      <div className="stat-numbers">
-                        <div className="stat-item">
-                          <strong>{stats.totalArticles}</strong>
-                          <span>статей</span>
-                        </div>
-                        <div className="stat-item">
-                          <strong>{stats.totalCategories}</strong>
-                          <span>категорий</span>
-                        </div>
-                      </div>
-                    </div>
+
                   </div>
                 </>
               )}
@@ -203,27 +266,7 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Быстрые ссылки */}
-          <div className="sidebar-section">
-            <h3>
-              <i className="fas fa-link me-2"></i>
-              Быстрые ссылки
-            </h3>
-            <div className="quick-links">
-              <Link to="/articles?sort=recent" className="quick-link">
-                <i className="fas fa-fire me-2"></i>
-                Новые статьи
-              </Link>
-              <Link to="/articles?sort=popular" className="quick-link">
-                <i className="fas fa-star me-2"></i>
-                Популярные
-              </Link>
-              <Link to="/help" className="quick-link">
-                <i className="fas fa-question-circle me-2"></i>
-                Помощь
-              </Link>
-            </div>
-          </div>
+
         </div>
       </div>
     </div>

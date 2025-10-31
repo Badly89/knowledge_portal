@@ -3255,3 +3255,14 @@ tr:hover {
     font-size: 0.9rem;
   }
 }
+
+.wrap-header {
+  display: flex;
+  align-items: center;
+}
+
+
+.img_logo {
+  width: 5%;
+  height: 5%;
+}

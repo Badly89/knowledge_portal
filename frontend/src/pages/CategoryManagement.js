@@ -272,7 +272,7 @@ function CategoryManagement() {
       )}
 
       {/* Статистика */}
-      <div className="management-stats">
+      {/* <div className="management-stats">
         <div className="stat-card">
           <div className="stat-icon">
             <i className="fas fa-folder"></i>
@@ -316,7 +316,7 @@ function CategoryManagement() {
             <small>Категорий с контентом</small>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Список категорий */}
       <div className="categories-management-list">
@@ -325,7 +325,7 @@ function CategoryManagement() {
             <i className="fas fa-list me-2"></i>
             Список категорий
           </h2>
-          <div className="header-stats">
+          {/* <div className="header-stats">
             <span className="total-count">
               <i className="fas fa-folder me-1"></i>
               {categories.length} категорий
@@ -334,7 +334,7 @@ function CategoryManagement() {
               <i className="fas fa-check-circle me-1"></i>
               {getActiveCategoriesCount()} с статьями
             </span>
-          </div>
+          </div> */}
         </div>
 
         {categories.length === 0 ? (

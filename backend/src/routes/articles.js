@@ -483,4 +483,32 @@ router.get('/search/suggestions', async (req, res) => {
   }
 });
 
+// Простая статистика по категориям для Dashboard
+router.get('/stats/categories/simple', async (req, res) => {
+  let conn;
+  try {
+    conn = await getConnection();
+
+    const stats = await conn.query(`
+      SELECT category_id, COUNT(*) as count 
+      FROM articles 
+      WHERE category_id IS NOT NULL 
+      GROUP BY category_id
+    `);
+
+    const statsObj = {};
+    stats.forEach(item => {
+      statsObj[item.category_id] = parseInt(item.count);
+    });
+
+    res.json(statsObj);
+  } catch (error) {
+    console.error('Ошибка получения простой статистики категорий:', error);
+    // Возвращаем пустой объект вместо ошибки
+    res.json({});
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
 export default router;

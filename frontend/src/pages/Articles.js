@@ -1,15 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 
 function Articles() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categories, setCategories] = useState([]);
 
   const { user, isAuthenticated } = useAuth();
+
+  // Получаем категорию из URL параметров при загрузке
+  useEffect(() => {
+    const categoryFromUrl = searchParams.get('category');
+    if (categoryFromUrl) {
+      setSelectedCategory(categoryFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchArticles();
@@ -71,6 +80,30 @@ function Articles() {
     }
   };
 
+  const handleCategoryChange = (e) => {
+    const categoryId = e.target.value;
+    setSelectedCategory(categoryId);
+
+    // Обновляем URL параметры
+    if (categoryId) {
+      setSearchParams({ category: categoryId });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+  const clearFilter = () => {
+    setSelectedCategory('');
+    setSearchParams({});
+  };
+
+  // Получаем название выбранной категории
+  const getSelectedCategoryName = () => {
+    if (!selectedCategory) return null;
+    const category = categories.find(cat => cat.id == selectedCategory);
+    return category ? category.name : null;
+  };
+
   if (loading) {
     return <div className="loading">Загрузка статей...</div>;
   }
@@ -78,9 +111,22 @@ function Articles() {
   return (
     <div className="articles-page">
       <div className="page-header">
-        <h1>Статьи Базы Знаний</h1>
+        <h1>
+          {selectedCategory ? (
+            <>
+              <i className="fas fa-folder me-2"></i>
+              Статьи: {getSelectedCategoryName()}
+            </>
+          ) : (
+            <>
+              <i className="fas fa-file-alt me-2"></i>
+              Все статьи
+            </>
+          )}
+        </h1>
         {isAuthenticated && user?.role === 'admin' && (
           <Link to="/articles/create" className="btn-primary">
+            <i className="fas fa-plus me-1"></i>
             Создать статью
           </Link>
         )}
@@ -88,11 +134,14 @@ function Articles() {
 
       <div className="articles-controls">
         <div className="filter-section">
-          <label htmlFor="category-filter">Фильтр по категории:</label>
+          <label htmlFor="category-filter">
+            <i className="fas fa-filter me-1"></i>
+            Фильтр по категории:
+          </label>
           <select
             id="category-filter"
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={handleCategoryChange}
           >
             <option value="">Все категории</option>
             {categories.map(category => (
@@ -101,21 +150,48 @@ function Articles() {
               </option>
             ))}
           </select>
+
+          {selectedCategory && (
+            <button onClick={clearFilter} className="clear-filter-btn">
+              <i className="fas fa-times me-1"></i>
+              Сбросить
+            </button>
+          )}
         </div>
 
         <div className="articles-count">
+          <i className="fas fa-file me-1"></i>
           Показано {filteredArticles.length} из {articles.length} статей
+          {selectedCategory && (
+            <span className="category-filter-info">
+              в категории "{getSelectedCategoryName()}"
+            </span>
+          )}
         </div>
       </div>
 
       <div className="articles-list">
         {filteredArticles.length === 0 ? (
           <div className="no-articles">
-            <p>Статьи не найдены.</p>
+            <i className="fas fa-inbox fa-3x mb-3"></i>
+            <h3>Статьи не найдены</h3>
+            <p>
+              {selectedCategory
+                ? `В категории "${getSelectedCategoryName()}" пока нет статей.`
+                : 'В базе знаний пока нет статей.'
+              }
+            </p>
             {isAuthenticated && user?.role === 'admin' && (
               <Link to="/articles/create" className="btn-primary">
+                <i className="fas fa-plus me-1"></i>
                 Создать первую статью
               </Link>
+            )}
+            {selectedCategory && (
+              <button onClick={clearFilter} className="btn-secondary">
+                <i className="fas fa-eye me-1"></i>
+                Показать все статьи
+              </button>
             )}
           </div>
         ) : (
@@ -128,9 +204,16 @@ function Articles() {
                 <div className="article-header">
                   <h2 className="article-title">{article.title}</h2>
                   <div className="article-meta">
-                    <span className="category-badge">{article.category_name}</span>
-                    <span className="author">Автор: {article.author_name}</span>
+                    <span className="category-badge">
+                      <i className="fas fa-folder me-1"></i>
+                      {article.category_name}
+                    </span>
+                    <span className="author">
+                      <i className="fas fa-user me-1"></i>
+                      Автор: {article.author_name}
+                    </span>
                     <span className="date">
+                      <i className="fas fa-calendar me-1"></i>
                       {new Date(article.created_at).toLocaleDateString('ru-RU')}
                     </span>
                   </div>
@@ -144,12 +227,14 @@ function Articles() {
                   <div className="article-attachments">
                     {files.length > 0 && (
                       <span className="attachments-count">
-                        📎 {files.length} файл(ов)
+                        <i className="fas fa-paperclip me-1"></i>
+                        {files.length} файл(ов)
                       </span>
                     )}
                     {images.length > 0 && (
                       <span className="images-count">
-                        🖼️ {images.length} изображений
+                        <i className="fas fa-image me-1"></i>
+                        {images.length} изображений
                       </span>
                     )}
                   </div>
@@ -159,6 +244,7 @@ function Articles() {
                       to={`/articles/${article.id}`}
                       className="read-more-btn"
                     >
+                      <i className="fas fa-eye me-1"></i>
                       Читать далее
                     </Link>
                   </div>
