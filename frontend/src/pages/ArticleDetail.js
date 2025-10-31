@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,11 +29,13 @@ function ArticleDetail() {
   const [newImages, setNewImages] = useState([]);
   const [filesToRemove, setFilesToRemove] = useState([]);
   const [imagesToRemove, setImagesToRemove] = useState([]);
+  const viewIncremented = useRef(false); // Флаг для отслеживания увеличения просмотров
 
   useEffect(() => {
     fetchArticle();
     fetchCategories();
   }, [id]);
+
 
   const fetchArticle = async () => {
     try {
@@ -46,6 +48,27 @@ function ArticleDetail() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const incrementViews = async () => {
+      // Проверяем, что статья загружена и просмотры еще не увеличивались
+      if (article && !viewIncremented.current) {
+        try {
+          await axios.post(`/api/articles/${id}/view`);
+          viewIncremented.current = true; // Устанавливаем флаг
+          // Обновляем локальное состояние
+          setArticle(prev => ({
+            ...prev,
+            views: (prev.views || 0) + 1
+          }));
+        } catch (error) {
+          console.error('Ошибка обновления просмотров:', error);
+        }
+      }
+    };
+
+    incrementViews();
+  }, [article, id]); // Зависимость от article, а не от id
 
   const fetchCategories = async () => {
     try {
@@ -902,6 +925,7 @@ function ArticleDetail() {
               <i className="fas fa-user me-1"></i>
               Автор: {article.author_name}
             </span>
+            <span>Просмотров: {article.viewcount || 0}</span>
             <span className="date">
               <i className="fas fa-calendar me-1"></i>
               Опубликовано: {new Date(article.created_at).toLocaleDateString('ru-RU')}

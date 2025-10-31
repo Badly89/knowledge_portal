@@ -123,10 +123,11 @@ router.get('/', async (req, res) => {
   try {
     conn = await getConnection();
     const articles = await conn.query(`
-      SELECT a.*, c.name as category_name, u.username as author_name 
+      SELECT a.*, c.name as category_name, u.username as author_name ,COALESCE(av.view_count, 0) as viewscount
       FROM articles a 
       LEFT JOIN categories c ON a.category_id = c.id 
       LEFT JOIN users u ON a.created_by = u.id 
+      LEFT JOIN article_views av ON a.id = av.article_id
       ORDER BY a.created_at DESC
     `);
 
@@ -150,10 +151,11 @@ router.get('/:id', async (req, res) => {
     conn = await getConnection();
 
     const articles = await conn.query(`
-      SELECT a.*, c.name as category_name, u.username as author_name 
+      SELECT a.*, c.name as category_name, u.username as author_name, COALESCE(av.view_count, 0) as  viewcount
       FROM articles a 
       LEFT JOIN categories c ON a.category_id = c.id 
       LEFT JOIN users u ON a.created_by = u.id 
+      LEFT JOIN article_views av ON a.id = av.article_id
       WHERE a.id = ?
     `, [id]);
 
@@ -684,78 +686,7 @@ router.get('/stats/categories', async (req, res) => {
   }
 });
 
-// Поиск статей
-router.get('/search', async (req, res) => {
-  let conn;
-  try {
-    const { q: searchQuery, category, page = 1, limit = 10 } = req.query;
 
-    if (!searchQuery || searchQuery.trim() === '') {
-      return res.status(400).json({ error: 'Поисковый запрос не может быть пустым' });
-    }
-
-    conn = await getConnection();
-
-    const offset = (page - 1) * limit;
-    const searchTerm = `%${searchQuery.trim()}%`;
-
-    let whereClause = `(a.title LIKE ? OR a.content LIKE ?)`;
-    let queryParams = [searchTerm, searchTerm];
-
-    if (category && category !== 'all') {
-      whereClause += ` AND a.category_id = ?`;
-      queryParams.push(category);
-    }
-
-    const articles = await conn.query(`
-      SELECT a.*, c.name as category_name, u.username as author_name 
-      FROM articles a 
-      LEFT JOIN categories c ON a.category_id = c.id 
-      LEFT JOIN users u ON a.created_by = u.id 
-      WHERE ${whereClause}
-      ORDER BY 
-        CASE 
-          WHEN a.title LIKE ? THEN 1 
-          WHEN a.content LIKE ? THEN 2 
-          ELSE 3 
-        END,
-        a.created_at DESC
-      LIMIT ? OFFSET ?
-    `, [...queryParams, searchTerm, searchTerm, parseInt(limit), offset]);
-
-    const countResult = await conn.query(`
-      SELECT COUNT(*) as total 
-      FROM articles a 
-      WHERE ${whereClause}
-    `, queryParams);
-
-    const totalArticles = Number(countResult[0].total);
-    const totalPages = Math.ceil(totalArticles / limit);
-
-    const processedArticles = articles.map(processArticleDates);
-
-    res.json({
-      articles: processedArticles,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages,
-        totalArticles,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      },
-      searchInfo: {
-        query: searchQuery,
-        category: category || 'all',
-        resultsCount: articles.length
-      }
-    });
-  } catch (error) {
-    console.error('Ошибка поиска статей:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-  } finally {
-    if (conn) conn.release();
-  }
-});
 
 // Получить общую статистику для панели управления
 router.get('/management/stats', async (req, res) => {
@@ -834,13 +765,11 @@ router.get('/search', async (req, res) => {
     let whereClause = `(a.title LIKE ? OR a.content LIKE ?)`;
     let queryParams = [searchTerm, searchTerm];
 
-    // Добавляем фильтр по категории если указан
     if (category && category !== 'all') {
       whereClause += ` AND a.category_id = ?`;
       queryParams.push(category);
     }
 
-    // Получаем статьи с пагинацией
     const articles = await conn.query(`
       SELECT a.*, c.name as category_name, u.username as author_name 
       FROM articles a 
@@ -857,22 +786,16 @@ router.get('/search', async (req, res) => {
       LIMIT ? OFFSET ?
     `, [...queryParams, searchTerm, searchTerm, parseInt(limit), offset]);
 
-    // Получаем общее количество для пагинации
     const countResult = await conn.query(`
       SELECT COUNT(*) as total 
       FROM articles a 
       WHERE ${whereClause}
     `, queryParams);
 
-    const totalArticles = countResult[0].total;
+    const totalArticles = Number(countResult[0].total);
     const totalPages = Math.ceil(totalArticles / limit);
 
-    // Обрабатываем JSON поля
-    const processedArticles = articles.map(article => ({
-      ...article,
-      files: safeJSONParse(article.files),
-      images: safeJSONParse(article.images)
-    }));
+    const processedArticles = articles.map(processArticleDates);
 
     res.json({
       articles: processedArticles,
@@ -996,6 +919,134 @@ router.get('/stats/simple', async (req, res) => {
       categoryStats: {},
       totalArticles: 0,
       activeCategories: 0
+    });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// Получить статистику просмотров для статьи
+router.get('/:id/views', async (req, res) => {
+  let conn;
+  try {
+    const { id } = req.params;
+    conn = await getConnection();
+
+    // Если используем отдельную таблицу для просмотров
+    const viewStats = await conn.query(
+      'SELECT view_count FROM article_views WHERE article_id = ?',
+      [id]
+    );
+
+    let views = 0;
+
+    if (viewStats.length > 0) {
+      // Берем из отдельной таблицы
+      views = Number(viewStats[0].view_count);
+    } else {
+      // Или пытаемся взять из основного столбца (если существует)
+      const articles = await conn.query(
+        'SELECT views FROM articles WHERE id = ?',
+        [id]
+      );
+
+      if (articles.length > 0) {
+        views = Number(articles[0].views) || 0;
+      }
+    }
+
+    res.json({
+      articleId: id,
+      views: views
+    });
+  } catch (error) {
+    console.error('Ошибка получения статистики просмотров:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// Получить самые популярные статьи (по просмотрам)
+router.get('/popular/top', async (req, res) => {
+  let conn;
+  try {
+    const { limit = 5 } = req.query;
+    conn = await getConnection();
+
+    const popularArticles = await conn.query(`
+      SELECT a.*, c.name as category_name, u.username as author_name,
+             COALESCE(av.view_count, a.views, 0) as total_views
+      FROM articles a 
+      LEFT JOIN categories c ON a.category_id = c.id 
+      LEFT JOIN users u ON a.created_by = u.id 
+      LEFT JOIN article_views av ON a.id = av.article_id
+      ORDER BY total_views DESC, a.created_at DESC
+      LIMIT ?
+    `, [parseInt(limit)]);
+
+    const processedArticles = popularArticles.map(processArticleDates);
+
+    res.json(processedArticles);
+  } catch (error) {
+    console.error('Ошибка получения популярных статей:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// Увеличить счетчик просмотров статьи (исправленная версия)
+router.post('/:id/view', async (req, res) => {
+  let conn;
+  try {
+    const { id } = req.params;
+    conn = await getConnection();
+
+    console.log(`Увеличиваем просмотры для статьи ${id}`); // Логируем
+
+    // Проверяем существование статьи
+    const existingArticle = await conn.query(
+      'SELECT id FROM articles WHERE id = ?',
+      [id]
+    );
+
+    if (existingArticle.length === 0) {
+      console.log(`Статья ${id} не найдена`);
+      return res.status(404).json({ error: 'Статья не найдена' });
+    }
+
+    // Обновляем или создаем запись в таблице просмотров
+    const result = await conn.query(`
+      INSERT INTO article_views (article_id, view_count) 
+      VALUES (?, 1) 
+      ON DUPLICATE KEY UPDATE 
+      view_count = view_count + 1, 
+      last_viewed = CURRENT_TIMESTAMP
+    `, [id]);
+
+    console.log(`Результат обновления просмотров:`, result); // Логируем
+
+    // Получаем текущее количество просмотров
+    const viewStats = await conn.query(
+      'SELECT view_count FROM article_views WHERE article_id = ?',
+      [id]
+    );
+
+    console.log(`Статистика просмотров:`, viewStats); // Логируем
+
+    const views = viewStats.length > 0 ? viewStats[0].view_count : 1;
+
+    res.json({
+      articleId: id,
+      views: Number(views),
+      message: 'Счетчик просмотров обновлен'
+    });
+  } catch (error) {
+    console.error('Ошибка обновления просмотров:', error);
+    res.status(500).json({
+      error: 'Внутренняя ошибка сервера',
+      details: error.message
     });
   } finally {
     if (conn) conn.release();

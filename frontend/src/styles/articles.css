@@ -139,6 +139,7 @@
 }
 
 .btn-secondary {
+  width: 250px;
   background: #6c757d;
   color: white;
   border: none;
@@ -956,7 +957,7 @@
 
 .article-attachments {
   display: flex;
-  flex-direction: column;
+
   padding-top: 2rem;
   display: flex;
   gap: 1rem;
@@ -969,4 +970,14 @@
 .article-attachments h3 {
   margin-bottom: 0.5rem;
   color: #2c3e50;
+}
+
+.article-views {
+  color: #666;
+  font-size: 0.85rem;
+
+}
+
+.article-views i {
+  color: #888;
 }

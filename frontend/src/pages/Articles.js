@@ -20,9 +20,29 @@ function Articles() {
     }
   }, [searchParams]);
 
+
+  // Получаем категорию из URL параметров при загрузке
   useEffect(() => {
-    fetchArticles();
-    fetchCategories();
+    const categoryFromUrl = searchParams.get('category');
+    if (categoryFromUrl) {
+      setSelectedCategory(categoryFromUrl);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    // Добавляем задержку между запросами
+    const fetchData = async () => {
+      try {
+        await fetchArticles();
+        // Ждем 500ms перед запросом категорий
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await fetchCategories();
+      } catch (error) {
+        console.error('Ошибка загрузки данных:', error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const fetchArticles = async () => {
@@ -31,6 +51,9 @@ function Articles() {
       setArticles(response.data);
     } catch (error) {
       console.error('Ошибка загрузки статей:', error);
+      if (error.response?.status === 429) {
+        console.log('Превышен лимит запросов к API статей');
+      }
     } finally {
       setLoading(false);
     }
@@ -42,6 +65,11 @@ function Articles() {
       setCategories(response.data);
     } catch (error) {
       console.error('Ошибка загрузки категорий:', error);
+      if (error.response?.status === 429) {
+        console.log('Превышен лимит запросов к API категорий');
+        // Пробуем снова через 2 секунды
+        setTimeout(fetchCategories, 2000);
+      }
     }
   };
 
@@ -205,12 +233,7 @@ function Articles() {
                 : 'В базе знаний пока нет статей.'
               }
             </p>
-            {isAuthenticated && user?.role === 'admin' && (
-              <Link to="/articles/create" className="btn-primary">
-                <i className="fas fa-plus me-1"></i>
-                Создать первую статью
-              </Link>
-            )}
+
             {selectedCategory && (
               <button onClick={clearFilter} className="btn-secondary">
                 <i className="fas fa-eye me-1"></i>
@@ -235,24 +258,33 @@ function Articles() {
                 <article className="article-card">
                   <div className="article-header">
                     <h2 className="article-title">{article.title}</h2>
+
                     <span className="category-badge">
                       <i className="fas fa-folder me-1"></i>
                       {article.category_name}
                     </span>
+                    <div className='wrap-subtitle'>
 
-                    <div className="article-attachments">
-                      {files.length > 0 && (
-                        <span className="attachments-count">
-                          <i className="fas fa-paperclip me-1"></i>
-                          {files.length} файл(ов)
-                        </span>
-                      )}
-                      {images.length > 0 && (
-                        <span className="images-count">
-                          <i className="fas fa-image me-1"></i>
-                          {images.length} изображений
-                        </span>
-                      )}
+
+                      <div className="article-attachments">
+                        {/* Добавьте блок с просмотрами */}
+                        <div className="article-views">
+                          <i className="fas fa-eye me-1"></i>
+                          {article.viewscount || 0} просмотров
+                        </div>
+                        {files.length > 0 && (
+                          <span className="attachments-count">
+                            <i className="fas fa-paperclip me-1"></i>
+                            {files.length} файл(ов)
+                          </span>
+                        )}
+                        {images.length > 0 && (
+                          <span className="images-count">
+                            <i className="fas fa-image me-1"></i>
+                            {images.length} изображений
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 

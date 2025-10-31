@@ -242,7 +242,6 @@ function SearchArticles() {
               ) : (
                 <>
                   <i className="fas fa-search me-1"></i>
-                  Найти
                 </>
               )}
             </button>
