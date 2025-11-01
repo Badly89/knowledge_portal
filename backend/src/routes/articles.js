@@ -2,8 +2,37 @@ import express from 'express';
 import { optionalAuth, requireAuth, isAdmin } from '../middleware/auth.js';
 import { getConnection } from '../utils/database.js';
 import { v4 as uuidv4 } from 'uuid';
+import multer from 'multer';
+import path from 'path';
 
 const router = express.Router();
+// Настройка multer для обработки файлов в памяти
+const storage = multer.memoryStorage();
+
+// Фильтр для проверки типа файла
+const fileFilter = (req, file, cb) => {
+  // Для изображений TinyMCE
+  if (file.fieldname === 'file') {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Разрешены только изображения'), false);
+    }
+  }
+  // Для обычных файлов (если нужно)
+  else {
+    cb(null, true);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB лимит
+    files: 1 // максимум 1 файл за раз
+  }
+});
 
 // Вспомогательная функция для преобразования BigInt в Number
 const convertBigIntToNumber = (obj) => {
@@ -116,6 +145,95 @@ const processImagesForUpdate = (existingImages, newImages, imagesToRemove = []) 
   // Объединяем существующие и новые изображения
   return [...filteredExistingImages, ...processedNewImages];
 };
+
+// Вариант 1: Разрешить загрузку без авторизации (для изображений)
+router.post('/tinymce/upload', upload.single('file'), async (req, res) => {
+  try {
+    console.log('TinyMCE upload request received:', {
+      file: req.file ? {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      } : 'no file'
+    });
+
+    // Проверяем, что файл был загружен
+    if (!req.file) {
+      console.log('No file uploaded');
+      return res.status(400).json({
+        error: 'Файл не был загружен',
+        details: 'Ожидается файл с именем поля "file"'
+      });
+    }
+
+    const file = req.file;
+
+    // Проверка типа файла
+    if (!file.mimetype.startsWith('image/')) {
+      return res.status(400).json({
+        error: 'Разрешены только изображения',
+        received: file.mimetype
+      });
+    }
+
+    // Проверка размера файла
+    if (file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({
+        error: 'Размер файла не должен превышать 5MB',
+        received: `${(file.size / 1024 / 1024).toFixed(2)}MB`
+      });
+    }
+
+    // Конвертируем buffer в base64
+    const base64Data = file.buffer.toString('base64');
+    const base64String = `data:${file.mimetype};base64,${base64Data}`;
+
+    console.log('Image uploaded successfully:', {
+      name: file.originalname,
+      type: file.mimetype,
+      size: file.size
+    });
+
+    // Возвращаем ответ в формате, ожидаемом TinyMCE
+    res.json({
+      location: base64String
+    });
+
+  } catch (error) {
+    console.error('Ошибка загрузки изображения TinyMCE:', error);
+    res.status(500).json({
+      error: 'Ошибка загрузки изображения',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Обработчик ошибок multer
+router.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        error: 'Размер файла слишком большой',
+        details: 'Максимальный размер файла: 5MB'
+      });
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        error: 'Слишком много файлов',
+        details: 'Можно загрузить только один файл за раз'
+      });
+    }
+  }
+
+  if (error.message.includes('Разрешены только изображения')) {
+    return res.status(400).json({
+      error: 'Неверный тип файла',
+      details: 'Разрешены только файлы изображений (JPEG, PNG, GIF, etc.)'
+    });
+  }
+
+  next(error);
+});
 
 // Получить все статьи с информацией о категориях (публичный доступ)
 router.get('/', async (req, res) => {
@@ -976,7 +1094,7 @@ router.get('/popular/top', async (req, res) => {
 
     const popularArticles = await conn.query(`
       SELECT a.*, c.name as category_name, u.username as author_name,
-             COALESCE(av.view_count, a.views, 0) as total_views
+             COALESCE(SUM(av.view_count), 0) as total_views
       FROM articles a 
       LEFT JOIN categories c ON a.category_id = c.id 
       LEFT JOIN users u ON a.created_by = u.id 

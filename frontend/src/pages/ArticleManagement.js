@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import RichTextEditor from '../components/RichTextEditor';
+
 
 function ArticleManagement() {
   const [articles, setArticles] = useState([]);
@@ -111,12 +113,20 @@ function ArticleManagement() {
     setImagesToRemove([]);
   };
 
-  // Обработка изменений формы
+  // Обработчик изменения обычных полей формы
   const handleEditFormChange = (e) => {
     const { name, value } = e.target;
     setEditFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  // Обработчик изменения контента редактора
+  const handleContentChange = (newContent) => {
+    setEditFormData(prev => ({
+      ...prev,
+      content: newContent
     }));
   };
 
@@ -351,13 +361,19 @@ function ArticleManagement() {
 
               <div className="form-group">
                 <label>Содержание *</label>
-                <textarea
+                {/* <textarea
                   name="content"
                   value={editFormData.content}
                   onChange={handleEditFormChange}
                   rows="10"
                   required
                   placeholder="Введите содержание статьи"
+                /> */}
+
+                <RichTextEditor
+                  value={editFormData.content}
+                  onChange={handleContentChange}
+                  height={300}
                 />
               </div>
 

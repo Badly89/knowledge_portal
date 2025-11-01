@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import RichTextEditor from '../components/RichTextEditor';
 import '../styles/articles.css';
 
 function ArticleDetail() {
@@ -199,7 +200,7 @@ function ArticleDetail() {
     setImagesToRemove([]);
   };
 
-  // Обработка изменений формы
+  // Обработчик изменения обычных полей формы
   const handleEditFormChange = (e) => {
     const { name, value } = e.target;
     setEditFormData(prev => ({
@@ -208,6 +209,13 @@ function ArticleDetail() {
     }));
   };
 
+  // Обработчик изменения контента редактора - ВАЖНО: исправленная функция
+  const handleContentChange = (newContent) => {
+    setEditFormData(prev => ({
+      ...prev,
+      content: newContent
+    }));
+  };
   // Загрузка новых файлов
   const handleNewFileUpload = (e, type) => {
     const selectedFiles = Array.from(e.target.files);
@@ -419,14 +427,12 @@ function ArticleDetail() {
 
               <div className="form-group">
                 <label>Содержание *</label>
-                <textarea
-                  name="content"
+                <RichTextEditor
                   value={editFormData.content}
-                  onChange={handleEditFormChange}
-                  rows="10"
-                  required
-                  placeholder="Введите содержание статьи"
+                  onChange={handleContentChange}
+                  height={400}
                 />
+
               </div>
 
               {/* Существующие файлы */}

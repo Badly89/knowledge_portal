@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import RichTextEditor from '../components/RichTextEditor';
 import axios from 'axios';
 
 function EditArticle() {
@@ -75,6 +76,11 @@ function EditArticle() {
     }
   };
 
+  // Обработчик изменения контента в TinyMCE
+  const handleEditorChange = (newContent) => {
+    setContent(newContent);
+  };
+
   const handleNewFileUpload = (e, type) => {
     const selectedFiles = Array.from(e.target.files);
 
@@ -98,7 +104,6 @@ function EditArticle() {
 
       reader.readAsDataURL(file);
     });
-
     // Сбрасываем значение input для возможности повторной загрузки тех же файлов
     e.target.value = '';
   };
@@ -235,12 +240,10 @@ function EditArticle() {
 
         <div className="form-group">
           <label>Содержание *</label>
-          <textarea
+          <RichTextEditor
             value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows="15"
-            required
-            placeholder="Введите содержание статьи"
+            onChange={setContent}
+
           />
         </div>
 

@@ -11,6 +11,7 @@ import { bigIntMiddleware } from './middleware/bigintMiddleware.js';
 const app = express();
 const PORT = process.env.PORT || 6500;
 
+
 // Middleware
 app.use(helmet());
 app.use(cors());
