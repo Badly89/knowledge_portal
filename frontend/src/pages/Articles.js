@@ -212,7 +212,7 @@ function Articles() {
 
         <div className="articles-count">
           <i className="fas fa-file me-1"></i>
-          Показано {filteredArticles.length} из {articles.length} статей
+          Показано {filteredArticles.length} из {articles.length} статей {" "}
           {selectedCategory && (
             <span className="category-filter-info">
               в категории "{getSelectedCategoryName()}"
@@ -257,50 +257,52 @@ function Articles() {
               >
                 <article className="article-card">
                   <div className="article-header">
-                    <h2 className="article-title">{article.title}</h2>
+                    <div className='meta-footer-header'>
+                      <h2 className="article-title">{article.title}</h2>
 
-                    <span className="category-badge">
-                      <i className="fas fa-folder me-1"></i>
-                      {article.category_name}
-                    </span>
-                    <div className='wrap-subtitle'>
-
-
-                      <div className="article-attachments">
-                        {/* Добавьте блок с просмотрами */}
-                        <div className="article-views">
-                          <i className="fas fa-eye me-1"></i>
-                          {article.viewscount || 0} просмотров
-                        </div>
-                        {files.length > 0 && (
-                          <span className="attachments-count">
-                            <i className="fas fa-paperclip me-1"></i>
-                            {files.length} файл(ов)
-                          </span>
-                        )}
-                        {images.length > 0 && (
-                          <span className="images-count">
-                            <i className="fas fa-image me-1"></i>
-                            {images.length} изображений
-                          </span>
-                        )}
-                      </div>
+                      <span className="category-badge">
+                        <i className="fas fa-folder me-1"></i>
+                        {article.category_name}
+                      </span>
                     </div>
+
                   </div>
 
                   <div className="article-footer">
 
 
-                    <div className="article-meta">
-
-                      <span className="author">
-                        <i className="fas fa-user me-1"></i>
-                        Автор: {article.author_name}
-                      </span>
-                      <span className="date">
-                        <i className="fas fa-calendar me-1"></i>
-                        {formatDate(article.created_at)}
-                      </span>
+                    <div className="article-meta ">
+                      <div className='meta-footer'>
+                        <span className="author">
+                          <i className="fas fa-user me-1"></i>
+                          Автор: {article.author_name}
+                        </span>
+                        <span className="date">
+                          <i className="fas fa-calendar me-1"></i>
+                          {formatDate(article.created_at)}
+                        </span>
+                      </div>
+                      <div className='wrap-subtitle'>
+                        <div className="article-attachments">
+                          {/* Добавьте блок с просмотрами */}
+                          <div className="article-views">
+                            <i className="fas fa-eye me-1"></i>
+                            {article.viewscount || 0} просмотров
+                          </div>
+                          {files.length > 0 && (
+                            <span className="attachments-count">
+                              <i className="fas fa-paperclip me-1"></i>
+                              {files.length} файл(ов)
+                            </span>
+                          )}
+                          {images.length > 0 && (
+                            <span className="images-count">
+                              <i className="fas fa-image me-1"></i>
+                              {images.length} изображений
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
 

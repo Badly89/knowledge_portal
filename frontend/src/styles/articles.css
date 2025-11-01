@@ -957,9 +957,6 @@
 
 .article-attachments {
   display: flex;
-
-  padding-top: 2rem;
-  display: flex;
   gap: 1rem;
   font-size: 0.9rem;
   color: #7f8c8d;

@@ -916,26 +916,32 @@ function ArticleDetail() {
               </div>
             )}
           </div>
+
           <div className="article-meta">
-            <span className="category">
-              <i className="fas fa-folder me-1"></i>
-              Категория: {article.category_name}
-            </span>
-            <span className="author">
-              <i className="fas fa-user me-1"></i>
-              Автор: {article.author_name}
-            </span>
-            <span>Просмотров: {article.viewcount || 0}</span>
-            <span className="date">
-              <i className="fas fa-calendar me-1"></i>
-              Опубликовано: {new Date(article.created_at).toLocaleDateString('ru-RU')}
-            </span>
-            {article.updated_at !== article.created_at && (
-              <span className="updated">
-                <i className="fas fa-sync me-1"></i>
-                Обновлено: {new Date(article.updated_at).toLocaleDateString('ru-RU')}
+            <div className='meta-left'>
+              <span className="category">
+                <i className="fas fa-folder me-1"></i>
+                Категория: {article.category_name}
               </span>
-            )}
+              <span className="author">
+                <i className="fas fa-user me-1"></i>
+                Автор: {article.author_name}
+              </span>
+
+            </div>
+            <div className='meta-right'>
+              <span className="date">
+                <i className="fas fa-calendar me-1"></i>
+                Опубликовано: {new Date(article.created_at).toLocaleDateString('ru-RU')}
+              </span>
+              {article.updated_at !== article.created_at && (
+                <span className="updated">
+                  <i className="fas fa-sync me-1"></i>
+                  Обновлено: {new Date(article.updated_at).toLocaleDateString('ru-RU')}
+                </span>
+              )}
+              <span>Просмотров: {article.viewcount || 0}</span>
+            </div>
           </div>
         </header>
 

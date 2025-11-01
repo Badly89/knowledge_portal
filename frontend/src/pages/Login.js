@@ -1,30 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
+
+  // Очищаем ошибки при изменении полей ввода или размонтировании компонента
+  useEffect(() => {
+    return () => {
+      clearError();
+    };
+  }, [clearError]);
+
+  // Очищаем ошибку при изменении полей ввода
+  useEffect(() => {
+    if (error) {
+      clearError();
+    }
+  }, [username, password, error, clearError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+
+    // Предотвращаем множественные отправки
+    if (loading) return;
 
     const result = await login(username, password);
 
     if (result.success) {
       navigate('/dashboard');
-    } else {
-      setError(result.error);
     }
-
-    setLoading(false);
+    // Ошибка уже установлена в AuthContext, поэтому не нужно устанавливать здесь
   };
 
   return (
@@ -32,34 +42,50 @@ function Login() {
       <form onSubmit={handleSubmit} className="login-form">
         <h2>Портал Базы Знаний - Вход</h2>
 
-        {error && <div className="error-message">{error}</div>}
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
 
         <div className="form-group">
-          <label>Имя пользователя:</label>
+          <label htmlFor="username">Имя пользователя:</label>
           <input
+            id="username"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            disabled={loading}
             required
+            autoComplete="username"
           />
         </div>
 
         <div className="form-group">
-          <label>Пароль:</label>
+          <label htmlFor="password">Пароль:</label>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
             required
+            autoComplete="current-password"
           />
         </div>
 
-        <button type="submit" disabled={loading}>
+        <button
+          type="submit"
+          disabled={loading}
+          className={loading ? 'button-loading' : ''}
+        >
           {loading ? 'Вход...' : 'Войти'}
         </button>
 
         <div className="demo-credentials">
-          <p><strong>Демо доступ:</strong> admin / admin123</p>
+          <p><strong>Демо доступ:</strong></p>
+          <p>Логин: <code>admin</code></p>
+          <p>Пароль: <code>admin123</code></p>
         </div>
       </form>
     </div>
