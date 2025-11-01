@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import RichTextEditor from '../components/RichTextEditor';
 
 function CreateArticle() {
   const [title, setTitle] = useState('');
@@ -109,11 +110,10 @@ function CreateArticle() {
 
         <div className="form-group">
           <label>Содержание:</label>
-          <textarea
+          <RichTextEditor
             value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows="15"
-            required
+            onChange={setContent}
+            height={400}
           />
         </div>
 

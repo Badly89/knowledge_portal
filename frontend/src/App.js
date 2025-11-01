@@ -7,7 +7,11 @@ import Categories from './pages/Categories';
 import Articles from './pages/Articles';
 import ArticleDetail from './pages/ArticleDetail';
 import CreateArticle from './pages/CreateArticle';
+import CategoryManagement from './pages/CategoryManagement';
 import Navbar from './components/Navbar';
+import ArticleManagement from './pages/ArticleManagement';
+import EditArticle from './pages/EditArticle';
+import SearchArticles from './pages/SearchArticles';
 
 function ProtectedRoute({ children, requireAuth = false, requireAdmin = false }) {
   const { user, isAuthenticated } = useAuth();
@@ -41,6 +45,14 @@ function App() {
                 element={<Categories />}
               />
               <Route
+                path="/categories/manage"
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <CategoryManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/articles"
                 element={<Articles />}
               />
@@ -55,6 +67,27 @@ function App() {
                     <CreateArticle />
                   </ProtectedRoute>
                 }
+              />
+              <Route
+                path="/articles/manage"
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <ArticleManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/articles/edit/:id"
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <EditArticle />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/search"
+                element={<SearchArticles />}
               />
               <Route path="/" element={<Navigate to="/dashboard" />} />
             </Routes>

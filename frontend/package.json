@@ -9,12 +9,15 @@
     "analyze": "webpack-bundle-analyzer dist/bundle.js"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
     "@fortawesome/fontawesome-svg-core": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.0",
+    "@tinymce/tinymce-react": "^6.3.0",
     "axios": "^1.5.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.15.0"
+    "react-router-dom": "^6.15.0",
+    "tinymce": "^8.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.22.0",
