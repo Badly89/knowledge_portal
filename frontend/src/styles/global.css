@@ -647,7 +647,7 @@ tr:hover {
 
 .meta-right {
   display: flex;
-  flex-direction: column;
+  /* flex-direction: column; */
   align-items: flex-end;
   gap: .5rem;
 }
@@ -2119,6 +2119,110 @@ tr:hover {
   display: none;
 }
 
+/* ArticleSlideshow.css */
+.article-slideshow {
+  margin: 2rem 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.slideshow-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  min-height: 400px;
+}
+
+.slide {
+  position: relative;
+  max-width: 100%;
+  text-align: center;
+}
+
+.slide-image {
+  max-width: 100%;
+  max-height: 500px;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.slide-counter {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.slideshow-btn {
+  position: absolute;
+  top: 50%;
+  /* transform: translateY(-50%); */
+  /* background: rgba(255, 255, 255, 0.9); */
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.slideshow-btn:hover {
+  /* background: white; */
+  /* transform: unset; */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.slideshow-btn--prev {
+  left: 20px;
+}
+
+.slideshow-btn--next {
+  right: 20px;
+}
+
+.slideshow-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 15px;
+  background: white;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .slideshow-container {
+    min-height: 300px;
+  }
+
+  .slideshow-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .slideshow-btn--prev {
+    left: 10px;
+  }
+
+  .slideshow-btn--next {
+    right: 10px;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .dashboard-main-content {
@@ -2380,4 +2484,25 @@ tr:hover {
   .image-overlay {
     opacity: 0.7;
   }
+}
+
+/* ArticleSlideshow.css - добавить */
+.no-images-notice {
+  text-align: center;
+  padding: 40px 20px;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  color: #6c757d;
+}
+
+.no-images-notice i {
+  font-size: 48px;
+  margin-bottom: 15px;
+  color: #adb5bd;
+}
+
+.no-images-notice p {
+  font-size: 16px;
+  margin: 0;
 }
