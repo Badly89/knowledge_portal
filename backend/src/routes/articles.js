@@ -59,7 +59,8 @@ const processArticleDates = (article) => {
     created_at: safeDateConvert(article.created_at),
     updated_at: safeDateConvert(article.updated_at),
     files: safeJSONParse(article.files),
-    images: safeJSONParse(article.images)
+    images: safeJSONParse(article.images),
+    enable_slideshow: article.enable_slideshow !== 0 // Преобразуем из tinyint(1) в boolean
   };
 };
 
@@ -363,7 +364,8 @@ router.get('/:id/edit', optionalAuth, isAdmin, async (req, res) => {
 router.post('/', optionalAuth, isAdmin, async (req, res) => {
   let conn;
   try {
-    const { title, content, category_id, files, images } = req.body;
+    const { title, content, category_id, files, images, enable_slideshow = true } = req.body;
+    conn = await getConnection();
 
     // Явная проверка обязательных полей
     if (!title || typeof title !== 'string' || !title.trim()) {
@@ -432,15 +434,16 @@ router.post('/', optionalAuth, isAdmin, async (req, res) => {
 
     // Вставка статьи
     const result = await conn.query(
-      `INSERT INTO articles (title, content, category_id, created_by, files, images) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO articles (title, content, category_id, created_by, files, images, enable_slideshow) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`, // Добавлено поле enable_slideshow
       [
         title.trim(),
         content.trim(),
         Number(category_id),
         userId,
         JSON.stringify(processedFiles),
-        JSON.stringify(processedImages)
+        JSON.stringify(processedImages),
+        enable_slideshow !== false // По умолчанию true
       ]
     );
 
@@ -500,7 +503,8 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
       files,
       images,
       filesToRemove = [],
-      imagesToRemove = []
+      imagesToRemove = [],
+      enable_slideshow // Добавлено поле enable_slideshow
     } = req.body;
 
     if (!title || title.trim() === '') {
@@ -533,10 +537,11 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
     // Обрабатываем изображения: удаляем отмеченные и добавляем новые
     const updatedImages = processImagesForUpdate(currentImages, images, imagesToRemove);
 
-    // Обновляем статью
+    // Обновляем статью с новым полем enable_slideshow
     await conn.query(
       `UPDATE articles 
-       SET title = ?, content = ?, category_id = ?, files = ?, images = ?, updated_at = CURRENT_TIMESTAMP 
+       SET title = ?, content = ?, category_id = ?, files = ?, images = ?, 
+           enable_slideshow = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
       [
         title.trim(),
@@ -544,6 +549,7 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
         category_id,
         JSON.stringify(updatedFiles),
         JSON.stringify(updatedImages),
+        enable_slideshow !== false, // По умолчанию true
         id
       ]
     );
@@ -570,6 +576,9 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
         added: updatedImages.filter(img => img.isNew).length,
         removed: imagesToRemove.length,
         total: updatedImages.length
+      },
+      slideshow: {
+        enabled: enable_slideshow !== false
       }
     };
 
@@ -889,8 +898,6 @@ router.get('/stats/categories', async (req, res) => {
     if (conn) conn.release();
   }
 });
-
-
 
 // Получить общую статистику для панели управления
 router.get('/management/stats', async (req, res) => {
