@@ -82,11 +82,7 @@ function Login() {
           {loading ? 'Вход...' : 'Войти'}
         </button>
 
-        <div className="demo-credentials">
-          <p><strong>Демо доступ:</strong></p>
-          <p>Логин: <code>admin</code></p>
-          <p>Пароль: <code>admin123</code></p>
-        </div>
+
       </form>
     </div>
   );

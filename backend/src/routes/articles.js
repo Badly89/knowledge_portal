@@ -4,10 +4,38 @@ import { getConnection } from '../utils/database.js';
 import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
+
+
 
 const router = express.Router();
-// Настройка multer для обработки файлов в памяти
-const storage = multer.memoryStorage();
+
+// ✅ Путь к frontend папке для загрузок
+const frontendPath = path.join(process.cwd(), '../frontend');
+const uploadsPath = path.join(frontendPath, 'public', 'uploads', 'tinymce');
+
+// ✅ Функция для создания директорий
+const ensureUploadDirs = () => {
+  if (!fs.existsSync(uploadsPath)) {
+    fs.mkdirSync(uploadsPath, { recursive: true });
+    console.log('✅ Created upload directory:', uploadsPath);
+  }
+};
+
+ensureUploadDirs();
+
+// ✅ Настройка multer для сохранения файлов во frontend
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    ensureUploadDirs(); // Убедимся что папка существует
+    cb(null, uploadsPath);
+  },
+  filename: (req, file, cb) => {
+    const fileExtension = path.extname(file.originalname);
+    const fileName = `image-${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExtension}`;
+    cb(null, fileName);
+  }
+});
 
 // Фильтр для проверки типа файла
 const fileFilter = (req, file, cb) => {
@@ -27,10 +55,15 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage: storage,
-  fileFilter: fileFilter,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Разрешены только изображения'), false);
+    }
+  },
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB лимит
-    files: 1 // максимум 1 файл за раз
+    fileSize: 5 * 1024 * 1024
   }
 });
 
@@ -101,8 +134,7 @@ const processArticleDates = (article) => {
     created_at: safeDateConvert(article.created_at),
     updated_at: safeDateConvert(article.updated_at),
     files: safeJSONParse(article.files),
-    images: safeJSONParse(article.images),
-    enable_slideshow: article.enable_slideshow !== 0 // Преобразуем из tinyint(1) в boolean
+    images: safeJSONParse(article.images)
   };
 };
 
@@ -148,67 +180,34 @@ const processImagesForUpdate = (existingImages, newImages, imagesToRemove = []) 
 };
 
 // Вариант 1: Разрешить загрузку без авторизации (для изображений)
+// ✅ Исправленный маршрут загрузки
+// ✅ Маршрут загрузки для TinyMCE
 router.post('/tinymce/upload', upload.single('file'), async (req, res) => {
   try {
-    console.log('TinyMCE upload request received:', {
-      file: req.file ? {
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size
-      } : 'no file'
-    });
+    console.log('TinyMCE upload request received');
 
-    // Проверяем, что файл был загружен
     if (!req.file) {
-      console.log('No file uploaded');
-      return res.status(400).json({
-        error: 'Файл не был загружен',
-        details: 'Ожидается файл с именем поля "file"'
-      });
+      return res.status(400).json({ error: 'Файл не был загружен' });
     }
 
     const file = req.file;
+    const imageUrl = `/uploads/tinymce/${file.filename}`;
 
-    // Проверка типа файла
-    if (!file.mimetype.startsWith('image/')) {
-      return res.status(400).json({
-        error: 'Разрешены только изображения',
-        received: file.mimetype
-      });
-    }
-
-    // Проверка размера файла
-    if (file.size > 5 * 1024 * 1024) {
-      return res.status(400).json({
-        error: 'Размер файла не должен превышать 5MB',
-        received: `${(file.size / 1024 / 1024).toFixed(2)}MB`
-      });
-    }
-
-    // Конвертируем buffer в base64
-    const base64Data = file.buffer.toString('base64');
-    const base64String = `data:${file.mimetype};base64,${base64Data}`;
-
-    console.log('Image uploaded successfully:', {
-      name: file.originalname,
-      type: file.mimetype,
-      size: file.size
+    console.log('✅ File uploaded successfully:', {
+      originalName: file.originalname,
+      savedName: file.filename,
+      publicUrl: imageUrl
     });
 
-    // Возвращаем ответ в формате, ожидаемом TinyMCE
     res.json({
-      location: base64String
+      location: imageUrl
     });
 
   } catch (error) {
-    console.error('Ошибка загрузки изображения TinyMCE:', error);
-    res.status(500).json({
-      error: 'Ошибка загрузки изображения',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Ошибка загрузки изображения' });
   }
 });
-
 // Обработчик ошибок multer
 router.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
@@ -346,7 +345,7 @@ router.get('/:id/edit', optionalAuth, isAdmin, async (req, res) => {
 router.post('/', optionalAuth, isAdmin, async (req, res) => {
   let conn;
   try {
-    const { title, content, category_id, files, images, enable_slideshow = true } = req.body;
+    const { title, content, category_id, files, images } = req.body;
     conn = await getConnection();
 
     // Process files and images (store as base64 in database)
@@ -368,16 +367,15 @@ router.post('/', optionalAuth, isAdmin, async (req, res) => {
     })) : [];
 
     const result = await conn.query(
-      `INSERT INTO articles (title, content, category_id, created_by, files, images, enable_slideshow) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`, // Добавлено поле enable_slideshow
+      `INSERT INTO articles (title, content, category_id, created_by, files, images) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         title,
         content,
         category_id,
         req.user.userId,
         JSON.stringify(processedFiles),
-        JSON.stringify(processedImages),
-        enable_slideshow !== false // По умолчанию true
+        JSON.stringify(processedImages)
       ]
     );
 
@@ -416,8 +414,7 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
       files,
       images,
       filesToRemove = [],
-      imagesToRemove = [],
-      enable_slideshow // Добавлено поле enable_slideshow
+      imagesToRemove = []
     } = req.body;
 
     if (!title || title.trim() === '') {
@@ -450,11 +447,10 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
     // Обрабатываем изображения: удаляем отмеченные и добавляем новые
     const updatedImages = processImagesForUpdate(currentImages, images, imagesToRemove);
 
-    // Обновляем статью с новым полем enable_slideshow
+    // Обновляем статью
     await conn.query(
       `UPDATE articles 
-       SET title = ?, content = ?, category_id = ?, files = ?, images = ?, 
-           enable_slideshow = ?, updated_at = CURRENT_TIMESTAMP 
+       SET title = ?, content = ?, category_id = ?, files = ?, images = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
       [
         title.trim(),
@@ -462,7 +458,6 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
         category_id,
         JSON.stringify(updatedFiles),
         JSON.stringify(updatedImages),
-        enable_slideshow !== false, // По умолчанию true
         id
       ]
     );
@@ -489,9 +484,6 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
         added: updatedImages.filter(img => img.isNew).length,
         removed: imagesToRemove.length,
         total: updatedImages.length
-      },
-      slideshow: {
-        enabled: enable_slideshow !== false
       }
     };
 
@@ -811,6 +803,8 @@ router.get('/stats/categories', async (req, res) => {
     if (conn) conn.release();
   }
 });
+
+
 
 // Получить общую статистику для панели управления
 router.get('/management/stats', async (req, res) => {

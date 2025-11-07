@@ -7,10 +7,34 @@ import categoryRoutes from './routes/categories.js';
 import articleRoutes from './routes/articles.js';
 import { initDatabase } from './utils/database.js';
 import { bigIntMiddleware } from './middleware/bigintMiddleware.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+
+
 
 const app = express();
 const PORT = process.env.PORT || 6500;
 
+// ✅ ПРАВИЛЬНЫЙ путь к frontend папке
+const frontendPath = path.join(process.cwd(), 'frontend');
+const uploadsPath = path.join(frontendPath, 'public', 'uploads');
+
+// ✅ ПРАВИЛЬНАЯ настройка статических файлов
+app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
+app.use(express.static(path.join(process.cwd(), 'public')));
+
+console.log('Static files configuration:');
+console.log('Frontend path:', frontendPath);
+console.log('Uploads path:', uploadsPath);
+console.log('Files will be available at: http://localhost:3001/uploads/filename');
+
+
+// Добавьте логирование для отладки
+app.use('/uploads', (req, res, next) => {
+  console.log('Static file request:', req.url);
+  next();
+});
 
 // Middleware
 app.use(helmet());

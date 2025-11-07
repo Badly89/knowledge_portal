@@ -1,6 +1,6 @@
 // components/ArticleSlideshow.jsx
-import React, { useState, useEffect } from "react";
-import "../styles/ArticleSlideshow.css";
+import React, { useState, useEffect } from 'react';
+import '../styles/ArticleSlideshow.css';
 
 const ArticleSlideshow = ({ content, images = [] }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -19,17 +19,16 @@ const ArticleSlideshow = ({ content, images = [] }) => {
       const allImages = [...imagesFromProps, ...imagesFromContent];
 
       // Убираем дубликаты по src и фильтруем некорректные изображения
-      const uniqueImages = allImages.filter(
-        (image, index, self) =>
-          image &&
-          image.src &&
-          index === self.findIndex((img) => img && img.src === image.src)
+      const uniqueImages = allImages.filter((image, index, self) =>
+        image &&
+        image.src &&
+        index === self.findIndex(img => img && img.src === image.src)
       );
 
-      console.log("Processed slideshow images:", uniqueImages);
+      console.log('Processed slideshow images:', uniqueImages);
       setSlideshowImages(uniqueImages);
     } catch (error) {
-      console.error("Error processing slideshow images:", error);
+      console.error('Error processing slideshow images:', error);
       setSlideshowImages([]);
     } finally {
       setLoading(false);
@@ -38,22 +37,20 @@ const ArticleSlideshow = ({ content, images = [] }) => {
 
   // Функция для извлечения изображений из HTML
   const extractImagesFromHTML = (htmlContent) => {
-    if (!htmlContent || typeof htmlContent !== "string") return [];
+    if (!htmlContent || typeof htmlContent !== 'string') return [];
 
     try {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(htmlContent, "text/html");
-      const imgElements = doc.querySelectorAll("img");
+      const doc = parser.parseFromString(htmlContent, 'text/html');
+      const imgElements = doc.querySelectorAll('img');
 
-      return Array.from(imgElements)
-        .map((img, index) => ({
-          src: img.src || "",
-          alt: img.alt || `Slide ${index + 1}`,
-          index: index,
-        }))
-        .filter((img) => img.src); // Фильтруем изображения без src
+      return Array.from(imgElements).map((img, index) => ({
+        src: img.src || '',
+        alt: img.alt || `Slide ${index + 1}`,
+        index: index
+      })).filter(img => img.src); // Фильтруем изображения без src
     } catch (error) {
-      console.error("Error parsing HTML for images:", error);
+      console.error('Error parsing HTML for images:', error);
       return [];
     }
   };
@@ -65,9 +62,7 @@ const ArticleSlideshow = ({ content, images = [] }) => {
 
   const prevSlide = () => {
     if (slideshowImages.length <= 1) return;
-    setCurrentSlide(
-      (prev) => (prev - 1 + slideshowImages.length) % slideshowImages.length
-    );
+    setCurrentSlide((prev) => (prev - 1 + slideshowImages.length) % slideshowImages.length);
   };
 
   const goToSlide = (index) => {
@@ -75,6 +70,8 @@ const ArticleSlideshow = ({ content, images = [] }) => {
       setCurrentSlide(index);
     }
   };
+
+
 
   // Защита от ошибок при рендере
   const currentImage = slideshowImages[currentSlide];
@@ -115,16 +112,10 @@ const ArticleSlideshow = ({ content, images = [] }) => {
       <div className="slideshow-container">
         {slideshowImages.length > 1 && (
           <>
-            <button
-              className="slideshow-btn slideshow-btn--prev"
-              onClick={prevSlide}
-            >
+            <button className="slideshow-btn slideshow-btn--prev" onClick={prevSlide}>
               ‹
             </button>
-            <button
-              className="slideshow-btn slideshow-btn--next"
-              onClick={nextSlide}
-            >
+            <button className="slideshow-btn slideshow-btn--next" onClick={nextSlide}>
               ›
             </button>
           </>
@@ -133,19 +124,17 @@ const ArticleSlideshow = ({ content, images = [] }) => {
         <div className="slide">
           <img
             src={currentImage.src}
-            alt={currentImage.alt || "Slide image"}
+            alt={currentImage.alt || 'Slide image'}
             className="slide-image"
             onError={(e) => {
-              console.error("Error loading image:", currentImage.src);
-              e.target.style.display = "none";
+              console.error('Error loading image:', currentImage.src);
+              e.target.style.display = 'none';
               // Переходим к следующему слайду если текущий не загрузился
               if (slideshowImages.length > 1) {
                 setTimeout(nextSlide, 1000);
               }
             }}
-            onLoad={() =>
-              console.log("Image loaded successfully:", currentImage.src)
-            }
+            onLoad={() => console.log('Image loaded successfully:', currentImage.src)}
           />
           {slideshowImages.length > 1 && (
             <div className="slide-counter">
@@ -161,7 +150,7 @@ const ArticleSlideshow = ({ content, images = [] }) => {
           {slideshowImages.map((_, index) => (
             <button
               key={index}
-              className={`indicator ${index === currentSlide ? "active" : ""}`}
+              className={`indicator ${index === currentSlide ? 'active' : ''}`}
               onClick={() => goToSlide(index)}
             />
           ))}
