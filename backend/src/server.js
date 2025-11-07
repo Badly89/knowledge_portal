@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 
 
 const app = express();
-const PORT = process.env.PORT || 6500;
+const PORT = process.env.PORT || 3001;
 
 // ✅ ПРАВИЛЬНЫЙ путь к frontend папке
 const frontendPath = path.join(process.cwd(), 'frontend');
