@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5000;
 
 // ✅ ПРАВИЛЬНЫЙ путь к frontend папке
 const frontendPath = path.join(process.cwd(), 'frontend');
@@ -27,7 +27,7 @@ app.use(express.static(path.join(process.cwd(), 'public')));
 console.log('Static files configuration:');
 console.log('Frontend path:', frontendPath);
 console.log('Uploads path:', uploadsPath);
-console.log('Files will be available at: http://localhost:3001/uploads/filename');
+console.log(`Files will be available at: http://localhost:${PORT}/uploads/filename`);
 
 
 // Добавьте логирование для отладки
