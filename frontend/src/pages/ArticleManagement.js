@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import RichTextEditor from '../components/RichTextEditor';
-
+import ArticleSlideshow from '../components/ArticleSlideshow';
 
 function ArticleManagement() {
   const [articles, setArticles] = useState([]);
@@ -15,10 +15,14 @@ function ArticleManagement() {
   const [success, setSuccess] = useState('');
   const [editingArticle, setEditingArticle] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showSlideshow, setShowSlideshow] = useState(true);
+
   const [editFormData, setEditFormData] = useState({
     title: '',
     content: '',
-    category_id: ''
+    category_id: '',
+    enable_slideshow: true // Новое поле для слайд-шоу
+
   });
   const [editLoading, setEditLoading] = useState(false);
   const [newFiles, setNewFiles] = useState([]);
@@ -37,6 +41,8 @@ function ArticleManagement() {
     try {
       const response = await axios.get('/api/articles');
       setArticles(response.data);
+      // Устанавливаем состояние слайд-шоу из данных статьи
+      setShowSlideshow(response.data.enable_slideshow !== false);
     } catch (error) {
       console.error('Ошибка загрузки статей:', error);
       setError('Не удалось загрузить статьи');
@@ -80,7 +86,8 @@ function ArticleManagement() {
       setEditFormData({
         title: article.title,
         content: article.content,
-        category_id: article.category_id
+        category_id: article.category_id,
+        enable_slideshow: article.enable_slideshow !== false // По умолчанию true
       });
 
       // Сбрасываем состояния файлов
@@ -105,7 +112,8 @@ function ArticleManagement() {
     setEditFormData({
       title: '',
       content: '',
-      category_id: ''
+      category_id: '',
+      enable_slideshow: true
     });
     setNewFiles([]);
     setNewImages([]);
@@ -115,10 +123,11 @@ function ArticleManagement() {
 
   // Обработчик изменения обычных полей формы
   const handleEditFormChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+
     setEditFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -128,6 +137,69 @@ function ArticleManagement() {
       ...prev,
       content: newContent
     }));
+  };
+  // Обработчик изменения чекбокса слайд-шоу
+  const handleSlideshowToggle = (e) => {
+    const { checked } = e.target;
+
+    setEditFormData(prev => {
+      let newContent = prev.content;
+
+      // Если включаем слайд-шоу, удаляем весь текст, оставляя только изображения
+      if (checked) {
+        newContent = removeTextKeepImages(prev.content);
+      }
+
+      return {
+        ...prev,
+        enable_slideshow: checked,
+        content: newContent
+      };
+    });
+  };
+
+  // Функция для удаления текста, оставляя только изображения
+  const removeTextKeepImages = (htmlContent) => {
+    if (!htmlContent) return '';
+
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlContent, 'text/html');
+      const images = doc.querySelectorAll('img');
+
+      // Создаем новый документ только с изображениями
+      const newDoc = document.implementation.createHTMLDocument();
+      const body = newDoc.body;
+
+      images.forEach(img => {
+        const newImg = newDoc.createElement('img');
+        newImg.src = img.src;
+        newImg.alt = img.alt;
+        newImg.className = img.className;
+        newImg.style.cssText = img.style.cssText;
+        body.appendChild(newImg);
+      });
+
+      return body.innerHTML;
+    } catch (error) {
+      console.error('Error removing text from content:', error);
+      return htmlContent;
+    }
+  };
+
+  // Функция для подсчета изображений в контенте
+  const countImagesInContent = (htmlContent) => {
+    if (!htmlContent) return 0;
+
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlContent, 'text/html');
+      const imgElements = doc.querySelectorAll('img');
+      return imgElements.length;
+    } catch (error) {
+      console.error('Error counting images in content:', error);
+      return 0;
+    }
   };
 
   // Загрузка новых файлов
@@ -358,23 +430,51 @@ function ArticleManagement() {
                   ))}
                 </select>
               </div>
-
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="enable_slideshow"
+                    checked={editFormData.enable_slideshow}
+                    onChange={handleSlideshowToggle}
+                    className="checkbox-input"
+                  />
+                  <span className="checkbox-custom"></span>
+                  <span className="checkbox-text">
+                    Включить слайд-шоу изображений
+                  </span>
+                </label>
+                <div className="checkbox-description">
+                  {editFormData.enable_slideshow
+                    ? 'Режим слайд-шоу: из контента будут удалены все текстовые элементы, останутся только изображения'
+                    : 'Обычный режим: отображается весь контент (текст и изображения)'
+                  }
+                </div>
+              </div>
               <div className="form-group">
                 <label>Содержание *</label>
-                {/* <textarea
-                  name="content"
-                  value={editFormData.content}
-                  onChange={handleEditFormChange}
-                  rows="10"
-                  required
-                  placeholder="Введите содержание статьи"
-                /> */}
-
+                {editFormData.enable_slideshow && (
+                  <div className="slideshow-warning">
+                    <i className="fas fa-exclamation-triangle"></i>
+                    <div>
+                      <strong>Режим слайд-шоу активен</strong>
+                      <p>В этом режиме будут отображаться только изображения. Весь текст автоматически удаляется.</p>
+                    </div>
+                  </div>
+                )}
                 <RichTextEditor
                   value={editFormData.content}
                   onChange={handleContentChange}
                   height={300}
                 />
+                {editFormData.enable_slideshow && (
+                  <div className="content-stats">
+                    <i className="fas fa-info-circle"></i>
+                    <span>
+                      В контенте найдено {countImagesInContent(editFormData.content)} изображений для слайд-шоу
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Существующие файлы */}
