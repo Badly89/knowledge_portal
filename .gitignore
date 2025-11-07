@@ -58,3 +58,4 @@ temp/
 # Editor backups
 *~
 *.bak
+/frontend/public/uploads/tinymce
