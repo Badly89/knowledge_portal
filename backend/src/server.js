@@ -31,9 +31,14 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(',') 
-    : ['http://localhost:3002', 'https://knowledge-portal.loc'],
+  origin: function (origin, callback) {
+    const allowedOrigins = ['http://localhost:3000', 'http://10.87.0.53:89', 'http://10.87.0.53'];
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 // ✅ Compression middleware
