@@ -4,7 +4,7 @@ import { Editor } from '@tinymce/tinymce-react';
 import { tinymceConfig } from '../config/tinymce';
 
 // Импорты TinyMCE
-import 'tinymce/tinymce.min';
+import 'tinymce/tinymce';
 import 'tinymce/icons/default/icons';
 import 'tinymce/themes/silver/theme';
 import 'tinymce/plugins/advlist';
