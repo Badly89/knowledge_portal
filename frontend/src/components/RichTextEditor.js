@@ -5,8 +5,8 @@ import { tinymceConfig } from '../config/tinymce';
 
 // Импорты TinyMCE
 import 'tinymce/tinymce.min';
-import 'tinymce/icons/default/icons.min';
-import 'tinymce/themes/silver/theme.min';
+import 'tinymce/icons/default/icons';
+import 'tinymce/themes/silver/theme';
 import 'tinymce/plugins/advlist';
 import 'tinymce/plugins/autolink';
 import 'tinymce/plugins/lists';
