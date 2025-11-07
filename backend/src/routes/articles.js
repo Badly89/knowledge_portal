@@ -6,26 +6,46 @@ import multer from 'multer';
 import path from 'path';
 
 const router = express.Router();
-
-// Настройка multer — оставляем как есть (для TinyMCE)
+// Настройка multer для обработки файлов в памяти
 const storage = multer.memoryStorage();
+
+// Фильтр для проверки типа файла
 const fileFilter = (req, file, cb) => {
-  if (file.fieldname === 'file' && !file.mimetype.startsWith('image/')) {
-    return cb(new Error('Разрешены только изображения'), false);
+  // Для изображений TinyMCE
+  if (file.fieldname === 'file') {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Разрешены только изображения'), false);
+    }
   }
-  cb(null, true);
+  // Для обычных файлов (если нужно)
+  else {
+    cb(null, true);
+  }
 };
 
 const upload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024, files: 1 }
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB лимит
+    files: 1 // максимум 1 файл за раз
+  }
 });
-// Вспомогательные функции (оставляем без изменений)
+
+// Вспомогательная функция для преобразования BigInt в Number
 const convertBigIntToNumber = (obj) => {
   if (obj === null || obj === undefined) return obj;
-  if (typeof obj === 'bigint') return Number(obj);
-  if (Array.isArray(obj)) return obj.map(convertBigIntToNumber);
+
+  if (typeof obj === 'bigint') {
+    return Number(obj);
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(convertBigIntToNumber);
+  }
+
   if (typeof obj === 'object') {
     const newObj = {};
     for (const key in obj) {
@@ -33,33 +53,56 @@ const convertBigIntToNumber = (obj) => {
     }
     return newObj;
   }
+
   return obj;
 };
 
+// Вспомогательная функция для безопасной обработки JSON
 const safeJSONParse = (data) => {
   if (!data) return [];
   try {
     return typeof data === 'string' ? JSON.parse(data) : data;
-  } catch (e) {
-    console.error('JSON parse error:', e);
+  } catch (error) {
+    console.error('JSON parse error:', error);
     return [];
   }
 };
 
+// Функция для безопасного преобразования дат
 const safeDateConvert = (dateString) => {
   if (!dateString) return null;
-  const date = new Date(dateString);
-  return isNaN(date.getTime()) ? null : date.toISOString();
+
+  // Если это уже Date объект
+  if (dateString instanceof Date) {
+    return isNaN(dateString.getTime()) ? null : dateString.toISOString();
+  }
+
+  // Если это timestamp
+  if (typeof dateString === 'number' || (typeof dateString === 'string' && /^\d+$/.test(dateString))) {
+    const date = new Date(Number(dateString));
+    return isNaN(date.getTime()) ? null : date.toISOString();
+  }
+
+  // Если это строковая дата
+  if (typeof dateString === 'string') {
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? null : date.toISOString();
+  }
+
+  return null;
 };
+
 // Функция для обработки статьи и преобразования дат
 const processArticleDates = (article) => {
   if (!article) return article;
+
   return {
     ...article,
     created_at: safeDateConvert(article.created_at),
     updated_at: safeDateConvert(article.updated_at),
     files: safeJSONParse(article.files),
-    images: safeJSONParse(article.images)
+    images: safeJSONParse(article.images),
+    enable_slideshow: article.enable_slideshow !== 0 // Преобразуем из tinyint(1) в boolean
   };
 };
 
@@ -300,153 +343,46 @@ router.get('/:id/edit', optionalAuth, isAdmin, async (req, res) => {
 });
 
 // Создать статью (только для администраторов)
-// router.post('/', optionalAuth, isAdmin, async (req, res) => {
-//   let conn;
-//   try {
-//     const { title, content, category_id, files, images } = req.body;
-//     conn = await getConnection();
-
-//     // Process files and images (store as base64 in database)
-//     const processedFiles = files ? files.map(file => ({
-//       id: uuidv4(),
-//       name: file.name,
-//       type: file.type,
-//       size: file.size,
-//       data: file.data, // base64 encoded
-//       uploadedAt: new Date().toISOString()
-//     })) : [];
-
-//     const processedImages = images ? images.map(image => ({
-//       id: uuidv4(),
-//       name: image.name,
-//       type: image.type,
-//       data: image.data, // base64 encoded
-//       uploadedAt: new Date().toISOString()
-//     })) : [];
-
-//     const result = await conn.query(
-//       `INSERT INTO articles (title, content, category_id, created_by, files, images) 
-//        VALUES (?, ?, ?, ?, ?, ?)`,
-//       [
-//         title,
-//         content,
-//         category_id,
-//         req.user.userId,
-//         JSON.stringify(processedFiles),
-//         JSON.stringify(processedImages)
-//       ]
-//     );
-
-//     // Получаем созданную статью с обработкой JSON
-//     const newArticles = await conn.query(`
-//       SELECT a.*, c.name as category_name, u.username as author_name 
-//       FROM articles a 
-//       LEFT JOIN categories c ON a.category_id = c.id 
-//       LEFT JOIN users u ON a.created_by = u.id 
-//       WHERE a.id = ?
-//     `, [result.insertId]);
-
-//     const processedArticle = processArticleDates(newArticles[0]);
-
-//     res.status(201).json({
-//       ...processedArticle,
-//       message: 'Статья успешно создана'
-//     });
-//   } catch (error) {
-//     console.error('Ошибка создания статьи:', error);
-//     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-//   } finally {
-//     if (conn) conn.release();
-//   }
-// });
-
 router.post('/', optionalAuth, isAdmin, async (req, res) => {
   let conn;
   try {
-    const { title, content, category_id, files, images } = req.body;
+    const { title, content, category_id, files, images, enable_slideshow = true } = req.body;
     conn = await getConnection();
 
-    // Явная проверка обязательных полей
-    if (!title || typeof title !== 'string' || !title.trim()) {
-      return res.status(400).json({ error: 'Название статьи обязательно' });
-    }
-    if (!content || typeof content !== 'string' || !content.trim()) {
-      return res.status(400).json({ error: 'Содержание статьи обязательно' });
-    }
-    if (!category_id) {
-      return res.status(400).json({ error: 'Категория обязательна' });
-    }
+    // Process files and images (store as base64 in database)
+    const processedFiles = files ? files.map(file => ({
+      id: uuidv4(),
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      data: file.data, // base64 encoded
+      uploadedAt: new Date().toISOString()
+    })) : [];
 
-    // Проверка аутентификации
-    if (!req.user || !req.user.userId) {
-      console.warn('Попытка создания статьи без userId:', req.user);
-      return res.status(403).json({ error: 'Доступ запрещён: пользователь не авторизован' });
-    }
+    const processedImages = images ? images.map(image => ({
+      id: uuidv4(),
+      name: image.name,
+      type: image.type,
+      data: image.data, // base64 encoded
+      uploadedAt: new Date().toISOString()
+    })) : [];
 
-    const userId = Number(req.user.userId);
-    if (isNaN(userId)) {
-      return res.status(403).json({ error: 'Некорректный идентификатор пользователя' });
-    }
-
-    // Обработка files
-    let processedFiles = [];
-    if (files && Array.isArray(files)) {
-      processedFiles = files.map(file => {
-        if (!file.name || !file.type || !file.data) {
-          console.warn('Пропущен некорректный файл:', file);
-          return null;
-        }
-        return {
-          id: file.id || uuidv4(),
-          name: file.name,
-          type: file.type,
-          size: file.size || 0,
-          data: file.data,
-          uploadedAt: new Date().toISOString()
-        };
-      }).filter(Boolean);
-    }
-
-    // Обработка images
-    let processedImages = [];
-    if (images && Array.isArray(images)) {
-      processedImages = images.map(image => {
-        if (!image.name || !image.type || !image.data) {
-          console.warn('Пропущено некорректное изображение:', image);
-          return null;
-        }
-        return {
-          id: image.id || uuidv4(),
-          name: image.name,
-          type: image.type,
-          data: image.data,
-          uploadedAt: new Date().toISOString()
-        };
-      }).filter(Boolean);
-    }
-
-    conn = await getConnection();
-    if (!conn) {
-      console.error('Не удалось получить соединение с БД');
-      return res.status(500).json({ error: 'Сервис временно недоступен' });
-    }
-
-    // Вставка статьи
     const result = await conn.query(
-      `INSERT INTO articles (title, content, category_id, created_by, files, images) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO articles (title, content, category_id, created_by, files, images, enable_slideshow) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`, // Добавлено поле enable_slideshow
       [
-        title.trim(),
-        content.trim(),
-        Number(category_id),
-        userId,
+        title,
+        content,
+        category_id,
+        req.user.userId,
         JSON.stringify(processedFiles),
-        JSON.stringify(processedImages)
+        JSON.stringify(processedImages),
+        enable_slideshow !== false // По умолчанию true
       ]
     );
 
-    // Получение созданной статьи
-    const [newArticle] = await conn.query(`
+    // Получаем созданную статью с обработкой JSON
+    const newArticles = await conn.query(`
       SELECT a.*, c.name as category_name, u.username as author_name 
       FROM articles a 
       LEFT JOIN categories c ON a.category_id = c.id 
@@ -454,41 +390,20 @@ router.post('/', optionalAuth, isAdmin, async (req, res) => {
       WHERE a.id = ?
     `, [result.insertId]);
 
-    if (!newArticle) {
-      return res.status(500).json({ error: 'Статья создана, но не найдена' });
-    }
-
-    const processedArticle = processArticleDates(newArticle);
+    const processedArticle = processArticleDates(newArticles[0]);
 
     res.status(201).json({
       ...processedArticle,
       message: 'Статья успешно создана'
     });
-
   } catch (error) {
-    // Логируем полную ошибку только на сервере
-    console.error('FATAL: Ошибка создания статьи:', {
-      message: error.message,
-      stack: error.stack,
-      body: req.body ? {
-        title: typeof req.body.title,
-        content: typeof req.body.content,
-        category_id: req.body.category_id,
-        files: Array.isArray(req.body.files) ? req.body.files.length : 'отсутствуют',
-        images: Array.isArray(req.body.images) ? req.body.images.length : 'отсутствуют',
-        user: req.user
-      } : 'нет данных'
-    });
-
-    // Возвращаем клиенту обобщённую ошибку
-    res.status(500).json({
-      error: 'Не удалось создать статью. Повторите попытку позже.',
-      ...(process.env.NODE_ENV === 'development' && { details: error.message })
-    });
+    console.error('Ошибка создания статьи:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   } finally {
     if (conn) conn.release();
   }
 });
+
 // Обновить статью с поддержкой управления файлами и изображениями
 router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
   let conn;
@@ -501,7 +416,8 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
       files,
       images,
       filesToRemove = [],
-      imagesToRemove = []
+      imagesToRemove = [],
+      enable_slideshow // Добавлено поле enable_slideshow
     } = req.body;
 
     if (!title || title.trim() === '') {
@@ -534,10 +450,11 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
     // Обрабатываем изображения: удаляем отмеченные и добавляем новые
     const updatedImages = processImagesForUpdate(currentImages, images, imagesToRemove);
 
-    // Обновляем статью
+    // Обновляем статью с новым полем enable_slideshow
     await conn.query(
       `UPDATE articles 
-       SET title = ?, content = ?, category_id = ?, files = ?, images = ?, updated_at = CURRENT_TIMESTAMP 
+       SET title = ?, content = ?, category_id = ?, files = ?, images = ?, 
+           enable_slideshow = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
       [
         title.trim(),
@@ -545,6 +462,7 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
         category_id,
         JSON.stringify(updatedFiles),
         JSON.stringify(updatedImages),
+        enable_slideshow !== false, // По умолчанию true
         id
       ]
     );
@@ -571,6 +489,9 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
         added: updatedImages.filter(img => img.isNew).length,
         removed: imagesToRemove.length,
         total: updatedImages.length
+      },
+      slideshow: {
+        enabled: enable_slideshow !== false
       }
     };
 
@@ -890,8 +811,6 @@ router.get('/stats/categories', async (req, res) => {
     if (conn) conn.release();
   }
 });
-
-
 
 // Получить общую статистику для панели управления
 router.get('/management/stats', async (req, res) => {

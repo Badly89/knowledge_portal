@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, use } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import RichTextEditor from '../components/RichTextEditor';
+import ArticleSlideshow from '../components/ArticleSlideshow';
 import '../styles/articles.css';
 
 function ArticleDetail() {
@@ -16,6 +17,7 @@ function ArticleDetail() {
   const [showModal, setShowModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showSlideshow, setShowSlideshow] = useState(true);
 
   // Состояния для редактирования
   const [showEditModal, setShowEditModal] = useState(false);
@@ -23,7 +25,8 @@ function ArticleDetail() {
   const [editFormData, setEditFormData] = useState({
     title: '',
     content: '',
-    category_id: ''
+    category_id: '',
+    enable_slideshow: true // Новое поле для слайд-шоу
   });
   const [categories, setCategories] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
@@ -31,6 +34,10 @@ function ArticleDetail() {
   const [filesToRemove, setFilesToRemove] = useState([]);
   const [imagesToRemove, setImagesToRemove] = useState([]);
   const viewIncremented = useRef(false); // Флаг для отслеживания увеличения просмотров
+
+  // Состояние для отслеживания изменений
+  const [contentModified, setContentModified] = useState(false);
+
 
   useEffect(() => {
     fetchArticle();
@@ -42,6 +49,9 @@ function ArticleDetail() {
     try {
       const response = await axios.get(`/api/articles/${id}`);
       setArticle(response.data);
+      // Устанавливаем состояние слайд-шоу из данных статьи
+      setShowSlideshow(response.data.enable_slideshow !== false);
+
     } catch (error) {
       console.error('Ошибка загрузки статьи:', error);
       setError('Статья не найдена');
@@ -93,12 +103,22 @@ function ArticleDetail() {
     }
   };
 
+  // В компоненте ArticleDetail
   const getImages = () => {
     if (!article || !article.images) return [];
     try {
-      return typeof article.images === 'string'
+      const images = typeof article.images === 'string'
         ? JSON.parse(article.images)
         : article.images;
+
+      // Преобразуем в формат для слайд-шоу с проверками
+      return images
+        .filter(image => image && image.data && image.type) // Фильтруем корректные
+        .map((image, index) => ({
+          src: `data:${image.type};base64,${image.data}`,
+          alt: image.name || `Image ${index + 1}`,
+          index: index
+        }));
     } catch (error) {
       console.error('Ошибка парсинга images:', error);
       return [];
@@ -165,10 +185,17 @@ function ArticleDetail() {
       const response = await axios.get(`/api/articles/${id}/edit`);
       const articleData = response.data;
 
+      // Обрабатываем контент в зависимости от режима слайд-шоу
+      let processedContent = articleData.content;
+      if (articleData.enable_slideshow !== false) {
+        processedContent = extractImagesFromContent(articleData.content);
+      }
+
       setEditFormData({
         title: articleData.title,
         content: articleData.content,
-        category_id: articleData.category_id
+        category_id: articleData.category_id,
+        enable_slideshow: articleData.enable_slideshow !== false // По умолчанию true
       });
 
       // Сбрасываем состояния файлов
@@ -200,22 +227,165 @@ function ArticleDetail() {
     setImagesToRemove([]);
   };
 
+
+  // Функция для извлечения только изображений из HTML
+  const extractImagesFromContent = (htmlContent) => {
+    if (!htmlContent) return '';
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    const imgElements = doc.querySelectorAll('img');
+
+    // Создаем новый документ только с изображениями
+    const newDoc = document.implementation.createHTMLDocument();
+    const body = newDoc.body;
+
+    imgElements.forEach(img => {
+      const newImg = newDoc.createElement('img');
+      newImg.src = img.src;
+      newImg.alt = img.alt;
+      newImg.className = img.className;
+      newImg.style.cssText = img.style.cssText;
+      body.appendChild(newImg);
+    });
+
+    return body.innerHTML;
+  };
+
+  // Функция для удаления всего текста, оставляя только изображения
+  const removeTextKeepImages = (htmlContent) => {
+    if (!htmlContent) return '';
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+
+    // Сохраняем все изображения
+    const images = doc.querySelectorAll('img');
+    const savedImages = Array.from(images).map(img => {
+      const div = doc.createElement('div');
+      div.appendChild(img.cloneNode(true));
+      return div.innerHTML;
+    });
+
+    // Создаем чистый HTML только с изображениями
+    const cleanHTML = savedImages.join('');
+
+    return cleanHTML;
+  };
+
+  // Альтернативная функция с сохранением структуры изображений
+  const removeTextKeepImagesAdvanced = (htmlContent) => {
+    if (!htmlContent) return '';
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    const body = doc.body;
+
+    // Функция для рекурсивной очистки элементов
+    const cleanElement = (element) => {
+      // Если это изображение - оставляем как есть
+      if (element.tagName === 'IMG') {
+        return true;
+      }
+
+      // Если у элемента есть дочерние изображения - обрабатываем детей
+      if (element.querySelector('img')) {
+        const children = Array.from(element.childNodes);
+        let hasValidContent = false;
+
+        children.forEach(child => {
+          if (child.nodeType === Node.ELEMENT_NODE) {
+            if (cleanElement(child)) {
+              hasValidContent = true;
+            } else {
+              element.removeChild(child);
+            }
+          } else if (child.nodeType === Node.TEXT_NODE) {
+            // Удаляем текстовые узлы
+            if (child.textContent.trim() !== '') {
+              element.removeChild(child);
+            }
+          }
+        });
+
+        return hasValidContent;
+      } else {
+        // Если нет изображений - удаляем элемент
+        return false;
+      }
+    };
+
+    cleanElement(body);
+
+    return body.innerHTML;
+  };
+
+
+  // Обработчик изменения чекбокса слайд-шоу
+  const handleSlideshowToggle = (e) => {
+    const { checked } = e.target;
+
+    setEditFormData(prev => {
+      let newContent = prev.content;
+
+      // Если включаем слайд-шоу, удаляем весь текст, оставляя только изображения
+      if (checked) {
+        newContent = removeTextKeepImages(prev.content);
+        setContentModified(true);
+      }
+
+      return {
+        ...prev,
+        enable_slideshow: checked,
+        content: newContent
+      };
+    });
+  };
   // Обработчик изменения обычных полей формы
   const handleEditFormChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+
+    // Для чекбокса слайд-шоу используем специальный обработчик
+    if (name === 'enable_slideshow') {
+      handleSlideshowToggle(e);
+      return;
+    }
+
     setEditFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
+
+    if (name === 'content') {
+      setContentModified(true);
+    }
   };
 
   // Обработчик изменения контента редактора - ВАЖНО: исправленная функция
+  // Обработчик изменения контента редактора
   const handleContentChange = (newContent) => {
     setEditFormData(prev => ({
       ...prev,
       content: newContent
     }));
+    setContentModified(true);
   };
+
+  // Предупреждение при выключении слайд-шоу, если контент был изменен
+  const handleDisableSlideshow = () => {
+    if (contentModified && editFormData.enable_slideshow) {
+      const confirmDisable = window.confirm(
+        'При выключении слайд-шоу текстовый контент не будет восстановлен. ' +
+        'Вы уверены, что хотите выключить слайд-шоу?'
+      );
+
+      if (!confirmDisable) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Загрузка новых файлов
   const handleNewFileUpload = (e, type) => {
     const selectedFiles = Array.from(e.target.files);
@@ -372,6 +542,17 @@ function ArticleDetail() {
   const images = getImages();
   const isAdmin = isAuthenticated && user?.role === 'admin';
 
+
+  // Добавьте проверку перед рендером слайд-шоу
+  {
+    showSlideshow && article && (
+      <ArticleSlideshow
+        content={article.content || ''}
+        images={getImages()}
+      />
+    )
+  }
+
   return (
     <div className="article-detail">
       {/* Модальное окно редактирования */}
@@ -425,13 +606,53 @@ function ArticleDetail() {
                 </select>
               </div>
 
-              <div className="form-group">
+              {/* Чекбокс для слайд-шоу */}
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="enable_slideshow"
+                    checked={editFormData.enable_slideshow}
+                    onChange={handleEditFormChange}
+                    className="checkbox-input"
+                  />
+                  <span className="checkbox-custom"></span>
+                  <span className="checkbox-text">
+                    Включить слайд-шоу изображений
+                  </span>
+                </label>
+                <div className="checkbox-description">
+                  {editFormData.enable_slideshow
+                    ? 'Режим слайд-шоу: из контента будут удалены все текстовые элементы, останутся только изображения'
+                    : 'Обычный режим: отображается весь контент (текст и изображения)'
+                  }
+                </div>
+              </div>
+              <div className={`form-group ${editFormData.enable_slideshow ? 'disabled-section' : ''}`}>
                 <label>Содержание *</label>
+                {editFormData.enable_slideshow && (
+                  <div className="slideshow-warning">
+                    <i className="fas fa-exclamation-triangle"></i>
+                    <div>
+                      <strong>Режим слайд-шоу активен</strong>
+                      <p>В этом режиме будут отображаться только изображения. Весь текст автоматически удаляется.</p>
+                    </div>
+                  </div>
+                )}
                 <RichTextEditor
                   value={editFormData.content}
                   onChange={handleContentChange}
                   height={400}
+                  readOnly={false} // Всегда доступно для редактирования
                 />
+                {editFormData.enable_slideshow && (
+                  <div className="content-stats">
+                    <i className="fas fa-info-circle"></i>
+                    <span>
+                      В контенте найдено {countImagesInContent(editFormData.content)} изображений для слайд-шоу
+                    </span>
+                  </div>
+                )}
 
               </div>
 
@@ -952,10 +1173,34 @@ function ArticleDetail() {
         </header>
 
         <div className="article-body">
-          <div
-            className="content"
-            dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br>') }}
-          />
+          {/* Слайд-шоу из изображений статьи (только если включено) */}
+          {/* Слайд-шоу из изображений статьи (только если включено) */}
+          {showSlideshow && (
+            <ArticleSlideshow
+              content={article?.content}
+              images={getImages()} // Передаем изображения из article.images
+            />
+          )}
+
+
+          {/* Основной контент статьи (показываем только если слайд-шоу выключено) */}
+          {!showSlideshow && (
+            <div
+              className="content"
+              dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br>') }}
+            />
+          )}
+
+          {showSlideshow && (
+            <div className="slideshow-mode-notice">
+              <i className="fas fa-images"></i>
+              <div>
+                <strong>Режим слайд-шоу</strong>
+                <p>Отображаются только изображения из статьи в виде слайд-шоу</p>
+                <small>Всего изображений: {getImages().length + countImagesInContent(article.content)}</small>
+              </div>
+            </div>
+          )}
         </div>
 
         {images.length > 0 && (
@@ -1043,6 +1288,15 @@ function ArticleDetail() {
       )}
     </div>
   );
+
+  function countImagesInContent(htmlContent) {
+    if (!htmlContent) return 0;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    const imgElements = doc.querySelectorAll('img');
+    return imgElements.length;
+  }
 }
 
 export default ArticleDetail;
