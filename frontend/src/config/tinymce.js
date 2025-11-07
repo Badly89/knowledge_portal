@@ -1,33 +1,3 @@
-// config/tinymce.js
-const handleImageUpload = (blobInfo, progress) => {
-  return new Promise((resolve, reject) => {
-    const formData = new FormData();
-    formData.append('file', blobInfo.blob(), blobInfo.filename());
-
-    axios.post('/api/articles/tinymce/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      onUploadProgress: (progressEvent) => {
-        if (progressEvent.lengthComputable) {
-          progress(progressEvent.loaded / progressEvent.total * 100);
-        }
-      }
-    })
-      .then(response => {
-        if (response.data.location) {
-          resolve(response.data.location);
-        } else {
-          reject('Не удалось загрузить изображение');
-        }
-      })
-      .catch(error => {
-        console.error('Ошибка загрузки изображения:', error);
-        reject('Ошибка загрузки изображения: ' + error.message);
-      });
-  });
-};
 
 export const tinymceConfig = {
   init: {
@@ -36,16 +6,16 @@ export const tinymceConfig = {
     suffix: '.min', // используем .min.js файлы
     height: 500,
     menubar: true,
-    // menu: {
-    //   file: { title: 'File', items: 'newdocument restoredraft | preview | print' },
-    //   edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
-    //   view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
-    //   insert: { title: 'Insert', items: 'image link media template codesample inserttable | charmap emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
-    //   format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats blockformats fontformats fontsizes align lineheight | forecolor backcolor | removeformat' },
-    //   tools: { title: 'Tools', items: 'spellchecker spellcheckerlanguage | code wordcount' },
-    //   table: { title: 'Table', items: 'inserttable | cell row column | tableprops deletetable' },
-    //   help: { title: 'Help', items: 'help' }
-    // },
+    menu: {
+      file: { title: 'File', items: 'newdocument restoredraft | preview | print' },
+      edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
+      view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
+      insert: { title: 'Insert', items: 'image link media template codesample inserttable | charmap emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
+      format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats blockformats fontformats fontsizes align lineheight | forecolor backcolor | removeformat' },
+      tools: { title: 'Tools', items: 'spellchecker spellcheckerlanguage | code wordcount' },
+      table: { title: 'Table', items: 'inserttable | cell row column | tableprops deletetable' },
+      help: { title: 'Help', items: 'help' }
+    },
     plugins: [
       'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
       'searchreplace', 'visualblocks', 'code', 'fullscreen', 'media',

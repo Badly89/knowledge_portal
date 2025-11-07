@@ -23,6 +23,43 @@ function EditArticle() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // ✅ Диагностика
+  useEffect(() => {
+    console.log('🔍 EditArticle mounted');
+
+    const handleBeforeUnload = (e) => {
+      console.log('🚨 PAGE UNLOAD DETECTED - check console for stack trace');
+      console.trace();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  // ✅ Глобальная защита от перезагрузки
+  useEffect(() => {
+    const handleGlobalDragDrop = (e) => {
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🌎 Global drag/drop prevented');
+      }
+    };
+
+    document.addEventListener('dragover', handleGlobalDragDrop, true);
+    document.addEventListener('drop', handleGlobalDragDrop, true);
+
+    return () => {
+      document.removeEventListener('dragover', handleGlobalDragDrop, true);
+      document.removeEventListener('drop', handleGlobalDragDrop, true);
+    };
+  }, []);
+
+
+
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'admin') {
       navigate('/articles');
@@ -32,6 +69,15 @@ function EditArticle() {
     fetchArticle();
     fetchCategories();
   }, [id, isAuthenticated, user, navigate]);
+
+  // ✅ Отслеживаем изменения состояния
+  useEffect(() => {
+    console.log('📝 Content changed, length:', content.length);
+  }, [content]);
+
+  useEffect(() => {
+    console.log('🏷️ Title changed:', title);
+  }, [title]);
 
   // Безопасное получение данных
   const safeParseJSON = (data) => {
@@ -78,10 +124,15 @@ function EditArticle() {
 
   // Обработчик изменения контента в TinyMCE
   const handleEditorChange = (newContent) => {
+    console.log('✏️ Editor content changed, length:', newContent.length);
     setContent(newContent);
   };
 
   const handleNewFileUpload = (e, type) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    console.log('File input changed, type:', type);
     const selectedFiles = Array.from(e.target.files);
 
     selectedFiles.forEach(file => {
@@ -104,7 +155,7 @@ function EditArticle() {
 
       reader.readAsDataURL(file);
     });
-    // Сбрасываем значение input для возможности повторной загрузки тех же файлов
+
     e.target.value = '';
   };
 
@@ -132,8 +183,14 @@ function EditArticle() {
     setImagesToRemove(prev => prev.filter(id => id !== imageId));
   };
 
+  // ✅ Усиленный обработчик формы
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    console.log('💾 Form submission started');
     setSubmitting(true);
     setError('');
 
@@ -148,13 +205,38 @@ function EditArticle() {
         imagesToRemove
       });
 
-      console.log('Статья обновлена:', response.data);
+      console.log('✅ Article updated successfully');
       navigate('/articles/manage');
     } catch (error) {
-      console.error('Ошибка обновления статьи:', error);
+      console.error('❌ Update error:', error);
       setError(error.response?.data?.error || 'Не удалось обновить статью');
     } finally {
       setSubmitting(false);
+    }
+
+    return false;
+  };
+
+  // ✅ Добавляем обработчики для всех кнопок
+  const handleRemoveExistingFile = (fileId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFilesToRemove(prev => [...prev, fileId]);
+  };
+
+  const handleRemoveExistingImage = (imageId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImagesToRemove(prev => [...prev, imageId]);
+  };
+
+  const handleRemoveNewFile = (index, type, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (type === 'file') {
+      setNewFiles(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setNewImages(prev => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -242,7 +324,7 @@ function EditArticle() {
           <label>Содержание *</label>
           <RichTextEditor
             value={content}
-            onChange={setContent}
+            onChange={handleEditorChange}
 
           />
         </div>
@@ -274,7 +356,7 @@ function EditArticle() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => removeExistingFile(file.id)}
+                          onClick={() => handleRemoveExistingFile(file.id)}
                           className="remove-file-btn"
                           title="Удалить файл"
                         >
@@ -466,7 +548,16 @@ function EditArticle() {
         </div>
 
         <div className="form-actions">
-          <button type="submit" disabled={submitting} className="btn-save">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="btn-save"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSubmit(e);
+            }}
+          >
             {submitting ? '💾 Сохранение...' : '💾 Сохранить изменения'}
           </button>
           <Link to="/articles/manage" className="btn-cancel">
