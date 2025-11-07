@@ -88,7 +88,7 @@ export const initDatabase = async () => {
     `, ['admin', 'admin@knowledgeportal.ru', adminPassword]);
 
     if (adminResult.affectedRows > 0) {
-      console.log('✅ Администратор создан: admin / admin123');
+      console.log('✅ Администратор создан: admin');
     } else {
       console.log('ℹ️ Администратор уже существует');
     }
