@@ -1,5 +1,6 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   entry: './src/index.js',
@@ -60,7 +61,12 @@ module.exports = {
         minifyCSS: true,
         minifyURLs: true,
       }
-    })
+    }),
+    new CopyPlugin({
+      patterns: [
+        { from: 'node_modules/tinymce', to: 'tinymce' },
+      ],
+    }),
   ],
   devServer: {
     historyApiFallback: true,
@@ -72,6 +78,9 @@ module.exports = {
         target: 'http://localhost:6500',
         changeOrigin: true
       }
+    },
+    static: {
+      directory: path.join(__dirname, 'public'), // ✅
     },
     client: {
       overlay: {
