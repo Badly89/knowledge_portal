@@ -88,7 +88,7 @@ export const initDatabase = async () => {
     `, ['admin', 'admin@knowledgeportal.ru', adminPassword]);
 
     if (adminResult.affectedRows > 0) {
-      console.log('✅ Администратор создан: admin');
+      console.log('✅ Администратор создан: admin ');
     } else {
       console.log('ℹ️ Администратор уже существует');
     }
@@ -287,22 +287,6 @@ export const initDatabase = async () => {
     console.log(`✅ Создано ${articlesCreated} тестовых статей`);
 
 
-    export const checkDatabaseHealth = () => {
-  return new Promise((resolve) => {
-    if (!db) {
-      resolve({ status: 'disconnected' });
-      return;
-    }
-
-    db.get('SELECT 1 as health_check', (err) => {
-      if (err) {
-        resolve({ status: 'error', error: err.message });
-      } else {
-        resolve({ status: 'connected' });
-      }
-    });
-  });
-};
 
 
   } catch (error) {
