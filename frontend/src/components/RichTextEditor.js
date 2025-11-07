@@ -2,48 +2,111 @@
 import React, { useRef } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 import { tinymceConfig } from '../config/tinymce';
-import axios from 'axios';
+
+// ✅ Правильные импорты из node_modules
+import 'tinymce/tinymce.min';
+import 'tinymce/icons/default/icons.min';
+import 'tinymce/themes/silver/theme.min';
+
+// Плагины
+import 'tinymce/plugins/advlist';
+import 'tinymce/plugins/autolink';
+import 'tinymce/plugins/lists';
+import 'tinymce/plugins/link';
+import 'tinymce/plugins/image';
+import 'tinymce/plugins/charmap';
+
+import 'tinymce/plugins/preview';
+import 'tinymce/plugins/anchor';
+import 'tinymce/plugins/searchreplace';
+import 'tinymce/plugins/visualblocks';
+import 'tinymce/plugins/code';
+import 'tinymce/plugins/fullscreen';
+import 'tinymce/plugins/insertdatetime';
+import 'tinymce/plugins/media';
+import 'tinymce/plugins/table';
+
+import 'tinymce/plugins/help';
+import 'tinymce/plugins/wordcount';
 
 function RichTextEditor({ value, onChange, height = 500 }) {
   const editorRef = useRef(null);
 
   // Простой и надежный обработчик загрузки
   const handleImageUpload = (blobInfo, progress) => {
-    return new Promise((resolve, reject) => {
-      return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        formData.append('file', blobInfo.blob(), blobInfo.filename());
 
-        fetch('/api/articles/tinymce/upload', {
-          method: 'POST',
-          body: formData
-          // Не устанавливайте Content-Type - браузер сделает это автоматически для FormData
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', blobInfo.blob(), blobInfo.filename());
+
+      fetch('/api/articles/tinymce/upload', {
+        method: 'POST',
+        body: formData
+        // Не устанавливайте Content-Type - браузер сделает это автоматически для FormData
+      })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(err => {
+              throw new Error(err.error || 'Upload failed');
+            });
+          }
+          return response.json();
         })
-          .then(response => {
-            if (!response.ok) {
-              return response.json().then(err => {
-                throw new Error(err.error || 'Upload failed');
-              });
-            }
-            return response.json();
-          })
-          .then(data => {
-            if (data.location) {
-              resolve(data.location);
-            } else {
-              reject('Invalid response from server');
-            }
-          })
-          .catch(error => {
-            reject('Upload error: ' + error.message);
-          });
-      });
+        .then(data => {
+          if (data.location) {
+            resolve(data.location);
+          } else {
+            reject('Invalid response from server');
+          }
+        })
+        .catch(error => {
+          reject('Upload error: ' + error.message);
+        });
     });
+
   };
 
   const editorInit = {
-    ...tinymceConfig.init,
-    height: height,
+    license_key: 'gpl', // Используем GPL лицензию для оффлайн использования
+    base_url: '/tinymce',
+    suffix: '.min', // используем .min.js файлы
+    height: 500,
+    menubar: true,
+    // menu: {
+    //   file: { title: 'File', items: 'newdocument restoredraft | preview | print' },
+    //   edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
+    //   view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
+    //   insert: { title: 'Insert', items: 'image link media template codesample inserttable | charmap emoticons hr | pagebreak nonbreaking anchor toc | insertdatetime' },
+    //   format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats blockformats fontformats fontsizes align lineheight | forecolor backcolor | removeformat' },
+    //   tools: { title: 'Tools', items: 'spellchecker spellcheckerlanguage | code wordcount' },
+    //   table: { title: 'Table', items: 'inserttable | cell row column | tableprops deletetable' },
+    //   help: { title: 'Help', items: 'help' }
+    // },
+    plugins: [
+      'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
+      'searchreplace', 'visualblocks', 'code', 'fullscreen', 'media',
+      'insertdatetime', 'table', 'code', 'help', 'wordcount',
+      'quickbars', 'emoticons', 'codesample',
+    ],
+    toolbar: [
+      '  undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | image | code | help'
+    ].join(' | '),
+
+    toolbar_mode: 'sliding',
+    relative_urls: false,
+    remove_script_host: false,
+    convert_urls: false,
+    branding: false,
+    promotion: false,
+    resize: true,
+    elementpath: true,
+    content_langs: [
+      { title: 'Russian', code: 'ru' },
+    ],
+    promotion: false, // Отключает рекламу TinyMCE
+    branding: false, // Убирает брендинг TinyMCE
+
+    paste_data_images: true,
 
     // Критически важные настройки для загрузки изображений
     images_upload_handler: handleImageUpload, // Через сервер
@@ -52,10 +115,10 @@ function RichTextEditor({ value, onChange, height = 500 }) {
     images_reuse_filename: true,
 
     // Дополнительные настройки для изображений
-    image_advtab: true,
-    image_title: true,
-    image_caption: true,
-    image_dimensions: true,
+    // image_advtab: true,
+    // image_title: true,
+    // image_caption: true,
+    // image_dimensions: true,
 
     // Настройка file picker для ручного выбора файлов
     file_picker_types: 'image',
@@ -114,7 +177,7 @@ function RichTextEditor({ value, onChange, height = 500 }) {
       {/* Подсказка для пользователя */}
       <div className="editor-help-text">
         <small>
-          💡 Для вставки изображения: перетащите файл в редактор, вставьте из буфера обмена (Ctrl+V)
+          Для вставки изображения: перетащите файл в редактор, вставьте из буфера обмена (Ctrl+V)
           или используйте кнопку "Изображение" в панели инструментов. Поддерживаются JPG, PNG, GIF, WebP.
         </small>
       </div>

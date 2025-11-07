@@ -80,7 +80,7 @@ export const initDatabase = async () => {
 
     // Создаем администратора по умолчанию
     const bcrypt = await import('bcryptjs');
-    const adminPassword = await bcrypt.hash('admin123', 12);
+    const adminPassword = await bcrypt.hash('Gjhnfk89', 12);
 
     const adminResult = await conn.query(`
       INSERT IGNORE INTO users (username, email, password, role) 
