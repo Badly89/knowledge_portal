@@ -6,8 +6,6 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-
-
 const router = express.Router();
 
 // ✅ Путь к frontend папке для загрузок
@@ -66,6 +64,293 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024
   }
 });
+
+
+const extractImageFilenamesFromContent = (content) => {
+  if (!content || typeof content !== 'string') {
+    console.log('⚠️ Контент пуст или не является строкой');
+    return [];
+  }
+
+  const imageFilenames = [];
+
+  try {
+    console.log('🔍 Анализ контента для извлечения изображений...');
+
+    // 1. Поиск в формате API URL (/api/articles/uploads/tinymce/)
+    const apiImageRegex = /\/api\/articles\/uploads\/tinymce\/([a-zA-Z0-9\-_.]+\.(jpg|jpeg|png|gif|webp|svg))/gi;
+
+    // 2. Поиск в формате прямого пути (/uploads/tinymce/)
+    const directImageRegex = /\/uploads\/tinymce\/([a-zA-Z0-9\-_.]+\.(jpg|jpeg|png|gif|webp|svg))/gi;
+
+    // 3. Поиск в src атрибутах
+    const srcRegex = /src=["']([^"']*\/tinymce\/[a-zA-Z0-9\-_.]+\.(jpg|jpeg|png|gif|webp|svg))["']/gi;
+
+    // 4. Поиск в data атрибутах
+    const dataRegex = /data-image=["']([^"']*\/tinymce\/[a-zA-Z0-9\-_.]+\.(jpg|jpeg|png|gif|webp|svg))["']/gi;
+
+    const patterns = [
+      { regex: apiImageRegex, type: 'api-url' },
+      { regex: directImageRegex, type: 'direct-url' },
+      { regex: srcRegex, type: 'src-attribute' },
+      { regex: dataRegex, type: 'data-attribute' }
+    ];
+
+    patterns.forEach(({ regex, type }) => {
+      let match;
+      console.log(`🔍 Поиск по шаблону: ${type}`);
+
+      while ((match = regex.exec(content)) !== null) {
+        let filename = null;
+
+        if (type === 'api-url' || type === 'direct-url') {
+          filename = match[1];
+        } else if (type === 'src-attribute' || type === 'data-attribute') {
+          // Извлекаем имя файла из полного URL/path
+          const fullPath = match[1];
+          filename = fullPath.split('/').pop();
+        }
+
+        if (filename && isValidImageFilename(filename)) {
+          console.log(`✅ Найден файл (${type}): ${filename}`);
+          imageFilenames.push(filename);
+        }
+      }
+    });
+
+    // Убираем дубликаты и возвращаем результат
+    const uniqueFilenames = [...new Set(imageFilenames)];
+    console.log(`📊 Итог: найдено ${uniqueFilenames.length} уникальных файлов`);
+
+    return uniqueFilenames;
+
+  } catch (error) {
+    console.error('❌ Ошибка извлечения имен файлов из контента:', error);
+    return [];
+  }
+};
+
+
+/**
+ * Проверяет валидность имени файла изображения
+ * @param {string} filename - Имя файла для проверки
+ * @returns {boolean} true если валидное
+ */
+const isValidImageFilename = (filename) => {
+  if (!filename || typeof filename !== 'string') return false;
+
+  // Проверяем расширение файла
+  const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+  const extension = path.extname(filename).toLowerCase();
+
+  if (!validExtensions.includes(extension)) {
+    console.log(`⚠️ Неверное расширение файла: ${filename}`);
+    return false;
+  }
+
+  // Проверяем формат имени (должно соответствовать нашему шаблону)
+  const filenamePattern = /^image-\d+-\d+\.(jpg|jpeg|png|gif|webp|svg)$/i;
+  const isValid = filenamePattern.test(filename) || /^[a-zA-Z0-9\-_.]+$/.test(filename);
+
+  if (!isValid) {
+    console.log(`⚠️ Подозрительное имя файла: ${filename}`);
+  }
+
+  return isValid;
+};
+
+
+/**
+ * Безопасно удаляет файл с обработкой ошибок
+ * @param {string} filePath - Полный путь к файлу
+ * @returns {Promise<Object>} Результат операции
+ */
+const safeDeleteFile = (filePath) => {
+  return new Promise((resolve) => {
+    // Проверяем, что путь находится в разрешенной директории
+    if (!isPathInUploadsDirectory(filePath)) {
+      console.error(`🚨 Попытка удаления файла вне разрешенной директории: ${filePath}`);
+      return resolve({
+        success: false,
+        error: 'Путь вне разрешенной директории',
+        filePath
+      });
+    }
+
+    // Проверяем существование файла
+    if (!fs.existsSync(filePath)) {
+      console.log(`⚠️ Файл не существует: ${filePath}`);
+      return resolve({
+        success: true,
+        message: 'Файл не существует',
+        filePath
+      });
+    }
+
+    // Проверяем, что это файл, а не директория
+    const stats = fs.statSync(filePath);
+    if (!stats.isFile()) {
+      console.error(`🚨 Попытка удаления директории вместо файла: ${filePath}`);
+      return resolve({
+        success: false,
+        error: 'Указанный путь ведет к директории',
+        filePath
+      });
+    }
+
+    // Получаем информацию о файле перед удалением
+    const fileInfo = {
+      name: path.basename(filePath),
+      size: stats.size,
+      modified: stats.mtime
+    };
+
+    // Выполняем удаление
+    fs.unlink(filePath, (error) => {
+      if (error) {
+        console.error(`❌ Ошибка удаления файла ${filePath}:`, error);
+        resolve({
+          success: false,
+          error: error.message,
+          filePath,
+          fileInfo
+        });
+      } else {
+        console.log(`✅ Файл успешно удален: ${filePath} (${fileInfo.size} bytes)`);
+        resolve({
+          success: true,
+          message: 'Файл успешно удален',
+          filePath,
+          fileInfo
+        });
+      }
+    });
+  });
+};
+/**
+ * Проверяет, что путь находится в разрешенной директории uploads
+ * @param {string} filePath - Проверяемый путь
+ * @returns {boolean} true если путь безопасный
+ */
+const isPathInUploadsDirectory = (filePath) => {
+  try {
+    const normalizedFilePath = path.resolve(filePath);
+    const normalizedUploadsPath = path.resolve(uploadsPath);
+
+    // Проверяем, что файл находится внутри uploads директории
+    const isSafe = normalizedFilePath.startsWith(normalizedUploadsPath);
+
+    if (!isSafe) {
+      console.error(`🚨 Небезопасный путь: ${normalizedFilePath}`);
+      console.error(`🚨 Ожидаемая директория: ${normalizedUploadsPath}`);
+    }
+
+    return isSafe;
+  } catch (error) {
+    console.error('Ошибка проверки пути:', error);
+    return false;
+  }
+};
+
+/**
+ * Извлекает имена файлов из полей images и articles
+ * @param {Object} article - Объект статьи
+ * @returns {string[]} Массив имен файлов
+ */
+const extractFilenamesFromArticleFields = (article) => {
+  const filenames = [];
+
+  if (!article) return filenames;
+
+  try {
+    // Обрабатываем поле images
+    if (article.images && Array.isArray(article.images)) {
+      article.images.forEach((image, index) => {
+        if (image && typeof image === 'object') {
+          // Пытаемся извлечь имя файла разными способами
+          const possibleFields = ['filename', 'fileName', 'name', 'filePath', 'path', 'url'];
+
+          for (const field of possibleFields) {
+            if (image[field] && typeof image[field] === 'string') {
+              const filename = extractFilenameFromPath(image[field]);
+              if (filename && isValidImageFilename(filename)) {
+                console.log(`✅ Найден файл в images[${index}].${field}: ${filename}`);
+                filenames.push(filename);
+                break;
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Обрабатываем поле files
+    if (article.files && Array.isArray(article.files)) {
+      article.files.forEach((file, index) => {
+        if (file && typeof file === 'object') {
+          const possibleFields = ['filename', 'fileName', 'name', 'filePath', 'path', 'url'];
+
+          for (const field of possibleFields) {
+            if (file[field] && typeof file[field] === 'string') {
+              const filename = extractFilenameFromPath(file[field]);
+              if (filename) {
+                console.log(`✅ Найден файл в files[${index}].${field}: ${filename}`);
+                filenames.push(filename);
+                break;
+              }
+            }
+          }
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Ошибка извлечения файлов из полей статьи:', error);
+  }
+
+  return [...new Set(filenames)]; // Убираем дубликаты
+};
+
+/**
+ * Извлекает имя файла из полного пути или URL
+ * @param {string} pathOrUrl - Путь или URL
+ * @returns {string} Имя файла
+ */
+const extractFilenameFromPath = (pathOrUrl) => {
+  if (!pathOrUrl) return null;
+
+  try {
+    // Если это URL, извлекаем путь
+    let filePath = pathOrUrl;
+    if (pathOrUrl.includes('://')) {
+      const url = new URL(pathOrUrl);
+      filePath = url.pathname;
+    }
+
+    // Извлекаем имя файла
+    const filename = path.basename(filePath);
+
+    // Проверяем, что имя файла не пустое и не содержит подозрительных символов
+    if (filename && filename.length > 0 && !filename.includes('..') && !filename.includes('/')) {
+      return filename;
+    }
+
+    return null;
+  } catch (error) {
+    console.error(`Ошибка извлечения имени файла из "${pathOrUrl}":`, error);
+    return null;
+  }
+};
+
+
+// ✅ СТАТИЧЕСКАЯ РАЗДАЧА ФАЙЛОВ ИЗ РОУТЕРА
+// Это ключевое решение - обслуживаем файлы через API маршрут
+router.use('/uploads/tinymce', express.static(uploadsPath, {
+  // Дополнительные настройки для лучшей производительности
+  maxAge: '1d', // Кэширование на 1 день
+  etag: true,
+  lastModified: true
+}));
 
 // Вспомогательная функция для преобразования BigInt в Number
 const convertBigIntToNumber = (obj) => {
@@ -179,7 +464,207 @@ const processImagesForUpdate = (existingImages, newImages, imagesToRemove = []) 
   return [...filteredExistingImages, ...processedNewImages];
 };
 
-// Вариант 1: Разрешить загрузку без авторизации (для изображений)
+
+/**
+ * Основная функция для удаления всех файлов, связанных со статьей
+ * @param {Object} article - Объект статьи
+ * @returns {Promise<Object>} Результат операции
+ */
+const deleteArticleFiles = async (article) => {
+  const deletionResults = {
+    articleId: article.id,
+    deletedFiles: [],
+    errors: [],
+    totalDeleted: 0,
+    hasErrors: false,
+    startTime: new Date(),
+    endTime: null,
+    duration: null
+  };
+
+  try {
+    console.log(`🗑️ Начало удаления файлов для статьи ${article.id}...`);
+
+    if (!article) {
+      throw new Error('Статья не определена');
+    }
+
+    // 1. Собираем все возможные файлы статьи
+    const allFilenames = new Set();
+
+    // Файлы из HTML контента
+    const contentFiles = extractImageFilenamesFromContent(article.content);
+    contentFiles.forEach(file => allFilenames.add(file));
+
+    // Файлы из полей images и files
+    const fieldFiles = extractFilenamesFromArticleFields(article);
+    fieldFiles.forEach(file => allFilenames.add(file));
+
+    console.log(`📋 Всего файлов для проверки: ${allFilenames.size}`);
+
+    // 2. Удаляем каждый файл
+    for (const filename of allFilenames) {
+      const filePath = path.join(uploadsPath, filename);
+
+      console.log(`🔄 Обработка файла: ${filename}`);
+      const result = await safeDeleteFile(filePath);
+
+      if (result.success) {
+        deletionResults.deletedFiles.push({
+          filename,
+          size: result.fileInfo?.size,
+          path: filePath
+        });
+        deletionResults.totalDeleted++;
+      } else {
+        deletionResults.errors.push({
+          filename,
+          error: result.error,
+          path: filePath
+        });
+        deletionResults.hasErrors = true;
+      }
+    }
+
+    // 3. Записываем время завершения
+    deletionResults.endTime = new Date();
+    deletionResults.duration = deletionResults.endTime - deletionResults.startTime;
+
+    // 4. Формируем итоговый отчет
+    console.log(`📊 Итог удаления файлов статьи ${article.id}:`);
+    console.log(`✅ Удалено: ${deletionResults.totalDeleted} файлов`);
+    console.log(`❌ Ошибок: ${deletionResults.errors.length}`);
+    console.log(`⏱️ Время выполнения: ${deletionResults.duration}ms`);
+
+    if (deletionResults.deletedFiles.length > 0) {
+      console.log('🗂️ Удаленные файлы:', deletionResults.deletedFiles.map(f => f.filename));
+    }
+
+    if (deletionResults.errors.length > 0) {
+      console.error('🚨 Ошибки при удалении:', deletionResults.errors);
+    }
+
+    return deletionResults;
+
+  } catch (error) {
+    console.error(`❌ Критическая ошибка в deleteArticleFiles для статьи ${article.id}:`, error);
+
+    deletionResults.endTime = new Date();
+    deletionResults.duration = deletionResults.endTime - deletionResults.startTime;
+    deletionResults.errors.push({
+      type: 'critical',
+      error: error.message
+    });
+    deletionResults.hasErrors = true;
+
+    return deletionResults;
+  }
+};
+
+/**
+ * Создает резервную копию файлов перед удалением (опционально)
+ * @param {string[]} filenames - Массив имен файлов
+ * @param {string} backupDir - Директория для бэкапа
+ * @returns {Promise<Object>} Результат операции
+ */
+const createFilesBackup = async (filenames, backupDir = null) => {
+  if (!backupDir) {
+    backupDir = path.join(uploadsPath, 'backups', `backup-${Date.now()}`);
+  }
+
+  const backupResults = {
+    backupDir,
+    backedUpFiles: [],
+    errors: [],
+    totalBackedUp: 0
+  };
+
+  try {
+    // Создаем директорию для бэкапа
+    if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+    }
+
+    console.log(`💾 Создание бэкапа в: ${backupDir}`);
+
+    for (const filename of filenames) {
+      const sourcePath = path.join(uploadsPath, filename);
+      const backupPath = path.join(backupDir, filename);
+
+      if (fs.existsSync(sourcePath)) {
+        try {
+          // Копируем файл
+          fs.copyFileSync(sourcePath, backupPath);
+          backupResults.backedUpFiles.push(filename);
+          backupResults.totalBackedUp++;
+          console.log(`✅ Файл скопирован в бэкап: ${filename}`);
+        } catch (error) {
+          console.error(`❌ Ошибка копирования файла ${filename}:`, error);
+          backupResults.errors.push({
+            filename,
+            error: error.message
+          });
+        }
+      }
+    }
+
+    console.log(`📦 Бэкап завершен: ${backupResults.totalBackedUp} файлов`);
+
+  } catch (error) {
+    console.error('❌ Ошибка создания бэкапа:', error);
+    backupResults.errors.push({
+      type: 'backup',
+      error: error.message
+    });
+  }
+
+  return backupResults;
+};
+
+//маршруты
+
+// ✅ ДОПОЛНИТЕЛЬНО: Маршрут для отдачи файлов через контроллер (альтернатива static)
+router.get('/uploads/tinymce/:filename', (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(uploadsPath, filename);
+
+    // Проверяем существование файла
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        error: 'Файл не найден',
+        filename: filename,
+        path: filePath
+      });
+    }
+
+    // Определяем Content-Type по расширению файла
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml'
+    };
+
+    const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+    // Устанавливаем заголовки
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 часа
+
+    // Отправляем файл
+    res.sendFile(filePath);
+
+  } catch (error) {
+    console.error('Error serving file:', error);
+    res.status(500).json({ error: 'Ошибка при отдаче файла' });
+  }
+});
+
+
 // ✅ Исправленный маршрут загрузки
 // ✅ Маршрут загрузки для TinyMCE
 router.post('/tinymce/upload', upload.single('file'), async (req, res) => {
@@ -191,12 +676,16 @@ router.post('/tinymce/upload', upload.single('file'), async (req, res) => {
     }
 
     const file = req.file;
-    const imageUrl = `/uploads/tinymce/${file.filename}`;
+    // const imageUrl = `/public/uploads/tinymce/${file.filename}`;
+    // ✅ ВАРИАНТ 1: Относительный URL (рекомендуется)
+    const imageUrl = `/api/articles/uploads/tinymce/${file.filename}`;
 
     console.log('✅ File uploaded successfully:', {
       originalName: file.originalname,
       savedName: file.filename,
-      publicUrl: imageUrl
+      size: file.size,
+      publicUrl: imageUrl,
+      fullPath: file.path
     });
 
     res.json({
@@ -205,9 +694,34 @@ router.post('/tinymce/upload', upload.single('file'), async (req, res) => {
 
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ error: 'Ошибка загрузки изображения' });
+    res.status(500).json({
+      error: 'Ошибка загрузки изображения',
+      details: error.message
+    });
   }
 });
+router.delete('/uploads/tinymce/:filename', optionalAuth, isAdmin, (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(uploadsPath, filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Файл не найден' });
+    }
+
+    fs.unlinkSync(filePath);
+
+    res.json({
+      message: 'Файл успешно удален',
+      filename: filename
+    });
+
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    res.status(500).json({ error: 'Ошибка удаления файла' });
+  }
+});
+
 // Обработчик ошибок multer
 router.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
@@ -345,7 +859,7 @@ router.get('/:id/edit', optionalAuth, isAdmin, async (req, res) => {
 router.post('/', optionalAuth, isAdmin, async (req, res) => {
   let conn;
   try {
-    const { title, content, category_id, files, images } = req.body;
+    const { title, content, category_id, files, images, enable_slideshow = false } = req.body;
     conn = await getConnection();
 
     // Process files and images (store as base64 in database)
@@ -367,15 +881,16 @@ router.post('/', optionalAuth, isAdmin, async (req, res) => {
     })) : [];
 
     const result = await conn.query(
-      `INSERT INTO articles (title, content, category_id, created_by, files, images) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO articles (title, content, category_id, created_by, files, images, enable_slideshow)
+       VALUES (?, ?, ?, ?, ?, ?,?)`,
       [
         title,
         content,
         category_id,
         req.user.userId,
         JSON.stringify(processedFiles),
-        JSON.stringify(processedImages)
+        JSON.stringify(processedImages),
+        enable_slideshow
       ]
     );
 
@@ -414,7 +929,8 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
       files,
       images,
       filesToRemove = [],
-      imagesToRemove = []
+      imagesToRemove = [],
+      enable_slideshow = false
     } = req.body;
 
     if (!title || title.trim() === '') {
@@ -450,7 +966,7 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
     // Обновляем статью
     await conn.query(
       `UPDATE articles 
-       SET title = ?, content = ?, category_id = ?, files = ?, images = ?, updated_at = CURRENT_TIMESTAMP 
+       SET title = ?, content = ?, category_id = ?, files = ?, images = ?, enable_slideshow = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [
         title.trim(),
@@ -458,6 +974,7 @@ router.put('/:id', optionalAuth, isAdmin, async (req, res) => {
         category_id,
         JSON.stringify(updatedFiles),
         JSON.stringify(updatedImages),
+        enable_slideshow,
         id
       ]
     );
@@ -577,6 +1094,46 @@ router.delete('/:id/images/:imageId', optionalAuth, isAdmin, async (req, res) =>
   } catch (error) {
     console.error('Ошибка удаления изображения:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+
+// Принудительная очистка файлов статьи (админ)
+router.delete('/:id/cleanup-files', optionalAuth, isAdmin, async (req, res) => {
+  let conn;
+  try {
+    const { id } = req.params;
+    conn = await getConnection();
+
+    // Получаем статью
+    const articles = await conn.query(
+      'SELECT * FROM articles WHERE id = ?',
+      [id]
+    );
+
+    if (articles.length === 0) {
+      return res.status(404).json({ error: 'Статья не найдена' });
+    }
+
+    const article = processArticleDates(articles[0]);
+
+    // Удаляем файлы
+    const cleanupResult = await deleteArticleFiles(article);
+
+    res.json({
+      message: 'Очистка файлов завершена',
+      articleId: id,
+      cleanupResult
+    });
+
+  } catch (error) {
+    console.error('Ошибка очистки файлов:', error);
+    res.status(500).json({
+      error: 'Ошибка при очистке файлов',
+      details: error.message
+    });
   } finally {
     if (conn) conn.release();
   }
@@ -738,30 +1295,41 @@ router.get('/:id/images/:imageId/download', async (req, res) => {
   }
 });
 
-// Удалить статью (только для администраторов)
+// Удалить статью (только для администраторов) с удалением файлов
 router.delete('/:id', optionalAuth, isAdmin, async (req, res) => {
   let conn;
   try {
     const { id } = req.params;
     conn = await getConnection();
 
-    // Проверяем существование статьи
-    const existingArticle = await conn.query(
+    // Получаем статью со всеми данными
+    const articles = await conn.query(
       'SELECT * FROM articles WHERE id = ?',
       [id]
     );
 
-    if (existingArticle.length === 0) {
+    if (articles.length === 0) {
       return res.status(404).json({ error: 'Статья не найдена' });
     }
 
-    // Удаляем статью
+    const article = processArticleDates(articles[0]);
+
+    // Удаляем файлы изображений из папки uploads
+    await deleteArticleFiles(article);
+
+    // Удаляем статью из базы данных
     await conn.query('DELETE FROM articles WHERE id = ?', [id]);
 
-    res.json({ message: 'Статья успешно удалена' });
+    res.json({
+      message: 'Статья успешно удалена',
+      deletedFiles: true
+    });
   } catch (error) {
     console.error('Ошибка удаления статьи:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    res.status(500).json({
+      error: 'Внутренняя ошибка сервера',
+      details: error.message
+    });
   } finally {
     if (conn) conn.release();
   }
@@ -1168,6 +1736,116 @@ router.post('/:id/view', async (req, res) => {
     });
   } finally {
     if (conn) conn.release();
+  }
+});
+
+
+// Утилита для поиска неиспользуемых файлов
+router.get('/utils/unused-files', optionalAuth, isAdmin, async (req, res) => {
+  try {
+    // Получаем все статьи из базы
+    let conn = await getConnection();
+    const articles = await conn.query('SELECT id, content, images, files FROM articles');
+    conn.release();
+
+    // Собираем все используемые имена файлов
+    const usedFilenames = new Set();
+
+    articles.forEach(article => {
+      const processedArticle = processArticleDates(article);
+
+      // Извлекаем файлы из контента
+      const contentFiles = extractImageFilenamesFromContent(processedArticle.content);
+      contentFiles.forEach(filename => usedFilenames.add(filename));
+
+      // Файлы из поля images
+      if (processedArticle.images && Array.isArray(processedArticle.images)) {
+        processedArticle.images.forEach(image => {
+          if (image.filename) usedFilenames.add(image.filename);
+          if (image.filePath) usedFilenames.add(path.basename(image.filePath));
+        });
+      }
+
+      // Файлы из поля files
+      if (processedArticle.files && Array.isArray(processedArticle.files)) {
+        processedArticle.files.forEach(file => {
+          if (file.filename) usedFilenames.add(file.filename);
+          if (file.filePath) usedFilenames.add(path.basename(file.filePath));
+        });
+      }
+    });
+
+    // Получаем все файлы в папке uploads
+    const allFiles = fs.existsSync(uploadsPath)
+      ? fs.readdirSync(uploadsPath).filter(file =>
+        fs.statSync(path.join(uploadsPath, file)).isFile()
+      )
+      : [];
+
+    // Находим неиспользуемые файлы
+    const unusedFiles = allFiles.filter(file => !usedFilenames.has(file));
+
+    res.json({
+      totalFiles: allFiles.length,
+      usedFiles: usedFilenames.size,
+      unusedFiles: unusedFiles.length,
+      unusedFilesList: unusedFiles,
+      usedFilesList: Array.from(usedFilenames)
+    });
+
+  } catch (error) {
+    console.error('Ошибка поиска неиспользуемых файлов:', error);
+    res.status(500).json({
+      error: 'Ошибка при поиске неиспользуемых файлов',
+      details: error.message
+    });
+  }
+});
+
+// Удаление неиспользуемых файлов
+router.delete('/utils/cleanup-unused-files', optionalAuth, isAdmin, async (req, res) => {
+  try {
+    // Получаем список неиспользуемых файлов
+    const unusedResponse = await new Promise((resolve) => {
+      const mockReq = { method: 'GET' };
+      const mockRes = {
+        json: (data) => resolve(data)
+      };
+      // Вызываем маршрут unused-files программно
+      router.handle(mockReq, mockRes, () => { });
+    });
+
+    const { unusedFilesList } = unusedResponse;
+    const deletionResults = [];
+
+    // Удаляем каждый неиспользуемый файл
+    for (const filename of unusedFilesList) {
+      const filePath = path.join(uploadsPath, filename);
+      const result = await safeDeleteFile(filePath);
+      deletionResults.push({
+        filename,
+        success: result.success,
+        message: result.message || result.error
+      });
+    }
+
+    const successfulDeletions = deletionResults.filter(r => r.success).length;
+    const failedDeletions = deletionResults.filter(r => !r.success).length;
+
+    res.json({
+      message: 'Очистка неиспользуемых файлов завершена',
+      totalUnusedFiles: unusedFilesList.length,
+      successfulDeletions,
+      failedDeletions,
+      details: deletionResults
+    });
+
+  } catch (error) {
+    console.error('Ошибка очистки неиспользуемых файлов:', error);
+    res.status(500).json({
+      error: 'Ошибка при очистке неиспользуемых файлов',
+      details: error.message
+    });
   }
 });
 

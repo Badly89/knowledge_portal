@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
-import RichTextEditor from '../components/RichTextEditor';
-import '../styles/articles.css';
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
+import RichTextEditor from "../components/RichTextEditor";
+import "../styles/articles.css";
 
 function ArticleDetail() {
   const { id } = useParams();
@@ -11,7 +11,7 @@ function ArticleDetail() {
   const { user, isAuthenticated } = useAuth();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -21,9 +21,9 @@ function ArticleDetail() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editFormData, setEditFormData] = useState({
-    title: '',
-    content: '',
-    category_id: ''
+    title: "",
+    content: "",
+    category_id: "",
   });
   const [categories, setCategories] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
@@ -37,14 +37,13 @@ function ArticleDetail() {
     fetchCategories();
   }, [id]);
 
-
   const fetchArticle = async () => {
     try {
       const response = await axios.get(`/api/articles/${id}`);
       setArticle(response.data);
     } catch (error) {
-      console.error('Ошибка загрузки статьи:', error);
-      setError('Статья не найдена');
+      console.error("Ошибка загрузки статьи:", error);
+      setError("Статья не найдена");
     } finally {
       setLoading(false);
     }
@@ -58,12 +57,12 @@ function ArticleDetail() {
           await axios.post(`/api/articles/${id}/view`);
           viewIncremented.current = true; // Устанавливаем флаг
           // Обновляем локальное состояние
-          setArticle(prev => ({
+          setArticle((prev) => ({
             ...prev,
-            views: (prev.views || 0) + 1
+            views: (prev.views || 0) + 1,
           }));
         } catch (error) {
-          console.error('Ошибка обновления просмотров:', error);
+          console.error("Ошибка обновления просмотров:", error);
         }
       }
     };
@@ -73,10 +72,10 @@ function ArticleDetail() {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('/api/categories');
+      const response = await axios.get("/api/categories");
       setCategories(response.data);
     } catch (error) {
-      console.error('Ошибка загрузки категорий:', error);
+      console.error("Ошибка загрузки категорий:", error);
     }
   };
 
@@ -84,11 +83,11 @@ function ArticleDetail() {
   const getFiles = () => {
     if (!article || !article.files) return [];
     try {
-      return typeof article.files === 'string'
+      return typeof article.files === "string"
         ? JSON.parse(article.files)
         : article.files;
     } catch (error) {
-      console.error('Ошибка парсинга files:', error);
+      console.error("Ошибка парсинга files:", error);
       return [];
     }
   };
@@ -96,17 +95,17 @@ function ArticleDetail() {
   const getImages = () => {
     if (!article || !article.images) return [];
     try {
-      return typeof article.images === 'string'
+      return typeof article.images === "string"
         ? JSON.parse(article.images)
         : article.images;
     } catch (error) {
-      console.error('Ошибка парсинга images:', error);
+      console.error("Ошибка парсинга images:", error);
       return [];
     }
   };
 
   const downloadFile = (file) => {
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = `data:${file.type};base64,${file.data}`;
     link.download = file.name;
     link.click();
@@ -127,7 +126,7 @@ function ArticleDetail() {
     if (!selectedImage || images.length <= 1) return;
 
     let newIndex;
-    if (direction === 'next') {
+    if (direction === "next") {
       newIndex = (selectedImage.index + 1) % images.length;
     } else {
       newIndex = (selectedImage.index - 1 + images.length) % images.length;
@@ -140,10 +139,10 @@ function ArticleDetail() {
     setDeleting(true);
     try {
       await axios.delete(`/api/articles/${id}`);
-      navigate('/articles/manage');
+      navigate("/articles/manage");
     } catch (error) {
-      console.error('Ошибка удаления статьи:', error);
-      setError('Не удалось удалить статью');
+      console.error("Ошибка удаления статьи:", error);
+      setError("Не удалось удалить статью");
       setShowDeleteConfirm(false);
     } finally {
       setDeleting(false);
@@ -168,7 +167,7 @@ function ArticleDetail() {
       setEditFormData({
         title: articleData.title,
         content: articleData.content,
-        category_id: articleData.category_id
+        category_id: articleData.category_id,
       });
 
       // Сбрасываем состояния файлов
@@ -179,8 +178,8 @@ function ArticleDetail() {
 
       setShowEditModal(true);
     } catch (error) {
-      console.error('Ошибка загрузки статьи для редактирования:', error);
-      setError('Не удалось загрузить статью для редактирования');
+      console.error("Ошибка загрузки статьи для редактирования:", error);
+      setError("Не удалось загрузить статью для редактирования");
     } finally {
       setEditLoading(false);
     }
@@ -190,9 +189,9 @@ function ArticleDetail() {
   const closeEditModal = () => {
     setShowEditModal(false);
     setEditFormData({
-      title: '',
-      content: '',
-      category_id: ''
+      title: "",
+      content: "",
+      category_id: "",
     });
     setNewFiles([]);
     setNewImages([]);
@@ -203,24 +202,24 @@ function ArticleDetail() {
   // Обработчик изменения обычных полей формы
   const handleEditFormChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData(prev => ({
+    setEditFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   // Обработчик изменения контента редактора - ВАЖНО: исправленная функция
   const handleContentChange = (newContent) => {
-    setEditFormData(prev => ({
+    setEditFormData((prev) => ({
       ...prev,
-      content: newContent
+      content: newContent,
     }));
   };
   // Загрузка новых файлов
   const handleNewFileUpload = (e, type) => {
     const selectedFiles = Array.from(e.target.files);
 
-    selectedFiles.forEach(file => {
+    selectedFiles.forEach((file) => {
       const reader = new FileReader();
 
       reader.onload = (e) => {
@@ -228,49 +227,49 @@ function ArticleDetail() {
           name: file.name,
           type: file.type,
           size: file.size,
-          data: e.target.result.split(',')[1]
+          data: e.target.result.split(",")[1],
         };
 
-        if (type === 'file') {
-          setNewFiles(prev => [...prev, fileData]);
+        if (type === "file") {
+          setNewFiles((prev) => [...prev, fileData]);
         } else {
-          setNewImages(prev => [...prev, fileData]);
+          setNewImages((prev) => [...prev, fileData]);
         }
       };
 
       reader.readAsDataURL(file);
     });
 
-    e.target.value = '';
+    e.target.value = "";
   };
 
   // Управление существующими файлами
   const removeExistingFile = (fileId) => {
-    setFilesToRemove(prev => [...prev, fileId]);
+    setFilesToRemove((prev) => [...prev, fileId]);
   };
 
   const removeExistingImage = (imageId) => {
-    setImagesToRemove(prev => [...prev, imageId]);
+    setImagesToRemove((prev) => [...prev, imageId]);
   };
 
   const restoreExistingFile = (fileId) => {
-    setFilesToRemove(prev => prev.filter(id => id !== fileId));
+    setFilesToRemove((prev) => prev.filter((id) => id !== fileId));
   };
 
   const restoreExistingImage = (imageId) => {
-    setImagesToRemove(prev => prev.filter(id => id !== imageId));
+    setImagesToRemove((prev) => prev.filter((id) => id !== imageId));
   };
 
   // Удаление всех файлов
   const removeAllFiles = () => {
     const files = getFiles();
-    setFilesToRemove(files.map(file => file.id));
+    setFilesToRemove(files.map((file) => file.id));
   };
 
   // Удаление всех изображений
   const removeAllImages = () => {
     const images = getImages();
-    setImagesToRemove(images.map(image => image.id));
+    setImagesToRemove(images.map((image) => image.id));
   };
 
   // Восстановление всех файлов
@@ -285,10 +284,10 @@ function ArticleDetail() {
 
   // Удаление новых файлов
   const removeNewFile = (index, type) => {
-    if (type === 'file') {
-      setNewFiles(prev => prev.filter((_, i) => i !== index));
+    if (type === "file") {
+      setNewFiles((prev) => prev.filter((_, i) => i !== index));
     } else {
-      setNewImages(prev => prev.filter((_, i) => i !== index));
+      setNewImages((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -303,38 +302,42 @@ function ArticleDetail() {
         files: newFiles,
         images: newImages,
         filesToRemove,
-        imagesToRemove
+        imagesToRemove,
       });
 
-      setError('');
+      setError("");
       closeEditModal();
       fetchArticle(); // Обновляем данные статьи
     } catch (error) {
-      console.error('Ошибка обновления статьи:', error);
-      setError(error.response?.data?.error || 'Не удалось обновить статью');
+      console.error("Ошибка обновления статьи:", error);
+      setError(error.response?.data?.error || "Не удалось обновить статью");
     } finally {
       setEditLoading(false);
     }
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   // Получение существующих файлов и изображений для отображения в модальном окне
   const existingFiles = article ? getFiles() : [];
   const existingImages = article ? getImages() : [];
-  const displayFiles = existingFiles.filter(file => !filesToRemove.includes(file.id));
-  const displayImages = existingImages.filter(image => !imagesToRemove.includes(image.id));
+  const displayFiles = existingFiles.filter(
+    (file) => !filesToRemove.includes(file.id)
+  );
+  const displayImages = existingImages.filter(
+    (image) => !imagesToRemove.includes(image.id)
+  );
 
   // Закрытие модальных окон по клавише Escape
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         closeImageModal();
         if (showDeleteConfirm) cancelDelete();
         if (showEditModal) closeEditModal();
@@ -342,13 +345,13 @@ function ArticleDetail() {
     };
 
     if (showModal || showDeleteConfirm || showEditModal) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
     };
   }, [showModal, showDeleteConfirm, showEditModal]);
 
@@ -370,14 +373,17 @@ function ArticleDetail() {
 
   const files = getFiles();
   const images = getImages();
-  const isAdmin = isAuthenticated && user?.role === 'admin';
+  const isAdmin = isAuthenticated && user?.role === "admin";
 
   return (
     <div className="article-detail">
       {/* Модальное окно редактирования */}
       {showEditModal && (
         <div className="modal-overlay" onClick={closeEditModal}>
-          <div className="modal-content edit-modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-content edit-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>Редактирование статьи</h2>
               <button
@@ -417,7 +423,7 @@ function ArticleDetail() {
                   required
                 >
                   <option value="">Выберите категорию</option>
-                  {categories.map(category => (
+                  {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
@@ -432,7 +438,6 @@ function ArticleDetail() {
                   onChange={handleContentChange}
                   height={400}
                 />
-
               </div>
 
               {/* Существующие файлы */}
@@ -466,8 +471,12 @@ function ArticleDetail() {
                                 <div className="file-info">
                                   <span className="file-icon">📎</span>
                                   <div className="file-details">
-                                    <span className="file-name">{file.name}</span>
-                                    <span className="file-size">{formatFileSize(file.size)}</span>
+                                    <span className="file-name">
+                                      {file.name}
+                                    </span>
+                                    <span className="file-size">
+                                      {formatFileSize(file.size)}
+                                    </span>
                                   </div>
                                 </div>
                                 <button
@@ -488,7 +497,9 @@ function ArticleDetail() {
                       {filesToRemove.length > 0 && (
                         <div className="removed-files">
                           <div className="removed-header">
-                            <h4>Файлы для удаления ({filesToRemove.length}):</h4>
+                            <h4>
+                              Файлы для удаления ({filesToRemove.length}):
+                            </h4>
                             <button
                               type="button"
                               onClick={restoreAllFiles}
@@ -501,14 +512,18 @@ function ArticleDetail() {
                           </div>
                           <ul className="files-list">
                             {existingFiles
-                              .filter(file => filesToRemove.includes(file.id))
+                              .filter((file) => filesToRemove.includes(file.id))
                               .map((file) => (
                                 <li key={file.id} className="file-item removed">
                                   <div className="file-info">
                                     <span className="file-icon">🗑️</span>
                                     <div className="file-details">
-                                      <span className="file-name">{file.name}</span>
-                                      <span className="file-size">{formatFileSize(file.size)}</span>
+                                      <span className="file-name">
+                                        {file.name}
+                                      </span>
+                                      <span className="file-size">
+                                        {formatFileSize(file.size)}
+                                      </span>
                                     </div>
                                   </div>
                                   <button
@@ -536,7 +551,7 @@ function ArticleDetail() {
                   <input
                     type="file"
                     multiple
-                    onChange={(e) => handleNewFileUpload(e, 'file')}
+                    onChange={(e) => handleNewFileUpload(e, "file")}
                     className="file-input"
                   />
                   {newFiles.length > 0 && (
@@ -549,12 +564,14 @@ function ArticleDetail() {
                               <span className="file-icon">🆕</span>
                               <div className="file-details">
                                 <span className="file-name">{file.name}</span>
-                                <span className="file-size">{formatFileSize(file.size)}</span>
+                                <span className="file-size">
+                                  {formatFileSize(file.size)}
+                                </span>
                               </div>
                             </div>
                             <button
                               type="button"
-                              onClick={() => removeNewFile(index, 'file')}
+                              onClick={() => removeNewFile(index, "file")}
                               className="btn-remove"
                               title="Удалить файл"
                             >
@@ -595,7 +612,10 @@ function ArticleDetail() {
                           <h4>Текущие изображения ({displayImages.length}):</h4>
                           <div className="images-grid">
                             {displayImages.map((image) => (
-                              <div key={image.id} className="image-item existing">
+                              <div
+                                key={image.id}
+                                className="image-item existing"
+                              >
                                 <div className="image-preview">
                                   <img
                                     src={`data:${image.type};base64,${image.data}`}
@@ -605,7 +625,9 @@ function ArticleDetail() {
                                   <div className="image-overlay">
                                     <button
                                       type="button"
-                                      onClick={() => removeExistingImage(image.id)}
+                                      onClick={() =>
+                                        removeExistingImage(image.id)
+                                      }
                                       className="btn-remove-image"
                                       title="Удалить изображение"
                                     >
@@ -614,7 +636,9 @@ function ArticleDetail() {
                                   </div>
                                 </div>
                                 <div className="image-info">
-                                  <span className="image-name">{image.name}</span>
+                                  <span className="image-name">
+                                    {image.name}
+                                  </span>
                                 </div>
                               </div>
                             ))}
@@ -626,7 +650,10 @@ function ArticleDetail() {
                       {imagesToRemove.length > 0 && (
                         <div className="removed-images">
                           <div className="removed-header">
-                            <h4>Изображения для удаления ({imagesToRemove.length}):</h4>
+                            <h4>
+                              Изображения для удаления ({imagesToRemove.length}
+                              ):
+                            </h4>
                             <button
                               type="button"
                               onClick={restoreAllImages}
@@ -639,9 +666,14 @@ function ArticleDetail() {
                           </div>
                           <div className="images-grid">
                             {existingImages
-                              .filter(image => imagesToRemove.includes(image.id))
+                              .filter((image) =>
+                                imagesToRemove.includes(image.id)
+                              )
                               .map((image) => (
-                                <div key={image.id} className="image-item removed">
+                                <div
+                                  key={image.id}
+                                  className="image-item removed"
+                                >
                                   <div className="image-preview">
                                     <img
                                       src={`data:${image.type};base64,${image.data}`}
@@ -651,7 +683,9 @@ function ArticleDetail() {
                                     <div className="image-overlay">
                                       <button
                                         type="button"
-                                        onClick={() => restoreExistingImage(image.id)}
+                                        onClick={() =>
+                                          restoreExistingImage(image.id)
+                                        }
                                         className="btn-restore-image"
                                         title="Восстановить изображение"
                                       >
@@ -660,7 +694,9 @@ function ArticleDetail() {
                                     </div>
                                   </div>
                                   <div className="image-info">
-                                    <span className="image-name">{image.name}</span>
+                                    <span className="image-name">
+                                      {image.name}
+                                    </span>
                                   </div>
                                 </div>
                               ))}
@@ -680,7 +716,7 @@ function ArticleDetail() {
                     type="file"
                     multiple
                     accept="image/*"
-                    onChange={(e) => handleNewFileUpload(e, 'image')}
+                    onChange={(e) => handleNewFileUpload(e, "image")}
                     className="file-input"
                   />
                   {newImages.length > 0 && (
@@ -698,7 +734,7 @@ function ArticleDetail() {
                               <div className="image-overlay">
                                 <button
                                   type="button"
-                                  onClick={() => removeNewFile(index, 'image')}
+                                  onClick={() => removeNewFile(index, "image")}
                                   className="btn-remove-image"
                                   title="Удалить изображение"
                                 >
@@ -718,7 +754,10 @@ function ArticleDetail() {
               </div>
 
               {/* Сводка изменений */}
-              {(newFiles.length > 0 || newImages.length > 0 || filesToRemove.length > 0 || imagesToRemove.length > 0) && (
+              {(newFiles.length > 0 ||
+                newImages.length > 0 ||
+                filesToRemove.length > 0 ||
+                imagesToRemove.length > 0) && (
                 <div className="changes-summary">
                   <h4>Сводка изменений вложения:</h4>
                   <div className="changes-list">
@@ -737,13 +776,15 @@ function ArticleDetail() {
                     {newImages.length > 0 && (
                       <div className="change-item positive">
                         <i className="fas fa-plus"></i>
-                        Добавлено изображений: <strong>{newImages.length}</strong>
+                        Добавлено изображений:{" "}
+                        <strong>{newImages.length}</strong>
                       </div>
                     )}
                     {imagesToRemove.length > 0 && (
                       <div className="change-item negative">
                         <i className="fas fa-minus"></i>
-                        Удалено изображений: <strong>{imagesToRemove.length}</strong>
+                        Удалено изображений:{" "}
+                        <strong>{imagesToRemove.length}</strong>
                       </div>
                     )}
                   </div>
@@ -786,7 +827,10 @@ function ArticleDetail() {
       {/* Модальное окно подтверждения удаления */}
       {showDeleteConfirm && (
         <div className="modal-overlay" onClick={cancelDelete}>
-          <div className="modal-content confirm-modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-content confirm-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3>Подтверждение удаления</h3>
               <button
@@ -798,7 +842,10 @@ function ArticleDetail() {
               </button>
             </div>
             <div className="modal-body">
-              <p>Вы уверены, что хотите удалить статью <strong>"{article?.title}"</strong>?</p>
+              <p>
+                Вы уверены, что хотите удалить статью{" "}
+                <strong>"{article?.title}"</strong>?
+              </p>
               <p className="text-warning">Это действие нельзя отменить.</p>
             </div>
             <div className="modal-footer">
@@ -834,7 +881,10 @@ function ArticleDetail() {
       {/* Модальное окно для увеличенного изображения */}
       {showModal && selectedImage && (
         <div className="image-modal-overlay" onClick={closeImageModal}>
-          <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="image-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="image-modal-header">
               <h3>{selectedImage.name}</h3>
               <button
@@ -860,7 +910,7 @@ function ArticleDetail() {
                   <>
                     <button
                       className="nav-btn prev-btn"
-                      onClick={() => navigateImage('prev')}
+                      onClick={() => navigateImage("prev")}
                       aria-label="Предыдущее изображение"
                     >
                       <i className="fas fa-chevron-left"></i>
@@ -870,7 +920,7 @@ function ArticleDetail() {
                     </span>
                     <button
                       className="nav-btn next-btn"
-                      onClick={() => navigateImage('next')}
+                      onClick={() => navigateImage("next")}
                       aria-label="Следующее изображение"
                     >
                       <i className="fas fa-chevron-right"></i>
@@ -900,8 +950,6 @@ function ArticleDetail() {
             Назад к статьям
           </Link>
         </div>
-
-
       </div>
 
       {error && (
@@ -924,7 +972,7 @@ function ArticleDetail() {
           </div>
 
           <div className="article-meta">
-            <div className='meta-left'>
+            <div className="meta-left">
               <span className="category">
                 <i className="fas fa-folder me-1"></i>
                 Категория: {article.category_name}
@@ -933,17 +981,18 @@ function ArticleDetail() {
                 <i className="fas fa-user me-1"></i>
                 Автор: {article.author_name}
               </span>
-
             </div>
-            <div className='meta-right'>
+            <div className="meta-right">
               <span className="date">
                 <i className="fas fa-calendar me-1"></i>
-                Опубликовано: {new Date(article.created_at).toLocaleDateString('ru-RU')}
+                Опубликовано:{" "}
+                {new Date(article.created_at).toLocaleDateString("ru-RU")}
               </span>
               {article.updated_at !== article.created_at && (
                 <span className="updated">
                   <i className="fas fa-sync me-1"></i>
-                  Обновлено: {new Date(article.updated_at).toLocaleDateString('ru-RU')}
+                  Обновлено:{" "}
+                  {new Date(article.updated_at).toLocaleDateString("ru-RU")}
                 </span>
               )}
               <span>Просмотров: {article.viewcount || 0}</span>
@@ -954,7 +1003,9 @@ function ArticleDetail() {
         <div className="article-body">
           <div
             className="content"
-            dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br>') }}
+            dangerouslySetInnerHTML={{
+              __html: article.content.replace(/\n/g, "<br>"),
+            }}
           />
         </div>
 
@@ -987,8 +1038,6 @@ function ArticleDetail() {
           </div>
         )}
 
-
-
         {files.length > 0 && (
           <div className="article-attachments">
             <h3>
@@ -1003,7 +1052,9 @@ function ArticleDetail() {
                   </span>
                   <div className="file-info">
                     <span className="file-name">{file.name}</span>
-                    <span className="file-size">({(file.size / 1024).toFixed(1)} KB)</span>
+                    <span className="file-size">
+                      ({(file.size / 1024).toFixed(1)} KB)
+                    </span>
                   </div>
                   <button
                     onClick={() => downloadFile(file)}

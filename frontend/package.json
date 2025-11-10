@@ -3,39 +3,38 @@
   "version": "1.0.0",
   "description": "Frontend for Knowledge Portal - База знаний",
   "scripts": {
-    "dev": "webpack serve --mode development",
-    "build": "webpack --mode production",
-    "start": "webpack serve --mode production",
-    "analyze": "webpack-bundle-analyzer dist/bundle.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:analyze": "ANALYZE=true vite build"
   },
   "dependencies": {
-    "@babel/runtime": "^7.28.4",
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@fortawesome/fontawesome-svg-core": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.0",
     "@tinymce/tinymce-react": "^6.3.0",
     "axios": "^1.5.0",
-    "copy-webpack-plugin": "^13.0.1",
+    "core-js": "^3.46.0",
+    "css-minimizer-webpack-plugin": "^7.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.15.0",
-    "tinymce": "^8.2.0",
-    "css-minimizer-webpack-plugin": "^7.0.2",
-    "mini-css-extract-plugin": "^2.9.4"
+    "tinymce": "^8.2.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.22.0",
-    "@babel/preset-react": "^7.22.0",
+    "@babel/core": "^7.28.5",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
     "@babel/plugin-transform-runtime": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
-    "babel-loader": "^9.1.0",
-    "css-loader": "^6.8.0",
-    "html-webpack-plugin": "^5.5.0",
-    "style-loader": "^3.3.0",
-    "webpack": "^5.88.0",
-    "webpack-bundle-analyzer": "^4.9.0",
-    "webpack-cli": "^5.1.0",
-    "webpack-dev-server": "^4.15.0"
+    "@babel/runtime": "^7.28.4",
+    "@vitejs/plugin-react": "^5.1.0",
+    "autoprefixer": "^10.4.21",
+    "cssnano": "^7.1.2",
+    "postcss": "^8.5.6",
+    "rollup-plugin-visualizer": "^6.0.5",
+    "vite": "^7.2.2",
+    "vite-plugin-compression": "^0.5.1",
+    "vite-plugin-html": "^3.2.2"
   },
   "keywords": [
     "react",
