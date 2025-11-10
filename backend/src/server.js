@@ -28,7 +28,6 @@ app.use('/uploads', express.static(path.join(frontendPath, 'uploads')));
 console.log('Static files configuration:');
 console.log('Frontend path:', frontendPath);
 console.log('Uploads path:', uploadsPath);
-console.log('Files will be available at: http://localhost:3000/uploads/filename');
 
 
 // Добавьте логирование для отладки
