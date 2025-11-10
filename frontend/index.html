@@ -5,127 +5,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Портал Базы Знаний - База знаний</title>
+  <link rel="modulepreload" href="/src/index.jsx" />
   <meta name="description" content="Портал базы знаний со статьями, категориями и файлами">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="/favicon.svg">
 
   <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <!-- Open Graph meta tags for social sharing -->
-  <meta property="og:title" content="Портал Базы Знаний - База знаний">
-  <meta property="og:description" content="Портал базы знаний со статьями, категориями и файлами">
-  <meta property="og:type" content="website">
-
-  <!-- Additional meta tags -->
-  <meta name="theme-color" content="#2c3e50">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-
+  <link rel="stylesheet" href="src/styles/global.css">
   <style>
-    /* Critical CSS for initial loading */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    /* Minimal critical CSS to avoid FOUC */
+    /* #root {
+      min-height: 100vh;
+    } */
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-        sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      background-color: #f5f5f5;
-      color: #333;
-      line-height: 1.6;
-    }
-
-    /* Loading screen styles */
-    #loading-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Loading indicator */
+    /* .loading {
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 9999;
-      transition: opacity 0.5s ease-out;
-    }
-
-    .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      border-top: 4px solid white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-
-    .loading-text {
-      color: white;
-      font-size: 1.2rem;
-      font-weight: 500;
-    }
-
-    .loading-subtext {
-      color: rgba(255, 255, 255, 0.8);
-      font-size: 0.9rem;
-      margin-top: 10px;
-    }
-
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-
-    /* Hide loading screen when app loads */
-    #loading-screen.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    /* Basic app structure */
-    #root {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Error boundary fallback */
-    .error-fallback {
-      padding: 2rem;
-      text-align: center;
-      background: white;
-      margin: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    /* No JavaScript warning */
-    .no-js-warning {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      background: #e74c3c;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-      z-index: 10000;
-    }
+      height: 100vh;
+      font-family: system-ui, -apple-system, sans-serif;
+    } */
   </style>
 </head>
 
@@ -138,11 +41,11 @@
   </noscript>
 
   <!-- Loading screen -->
-  <div id="loading-screen">
+  <!-- <div id="loading-screen">
     <div class="loading-spinner"></div>
     <div class="loading-text">Портал Базы Знаний</div>
     <div class="loading-subtext">Загрузка...</div>
-  </div>
+  </div> -->
 
   <!-- React app root -->
   <div id="root">
@@ -161,8 +64,25 @@
             ">Обновить страницу</button>
     </div>
   </div>
+  <script type="module">
+    // Добавляем обработчик для устранения предупреждения
+    window.addEventListener('load', () => {
+      console.log('App loaded successfully');
+    });
 
-  <script>
+    // Fallback если загрузка действительно долгая
+    setTimeout(() => {
+      const loadingEl = document.querySelector('.loading');
+      if (loadingEl && !window.__APP_LOADED__) {
+        loadingEl.innerHTML = '<div>Still loading... Please wait</div>';
+      }
+    }, 3000);
+
+    // Отмечаем когда приложение загружено
+    window.__APP_LOADED__ = false;
+  </script>
+
+  <!-- <script>
     // Enhanced loading screen management
     (function () {
       'use strict';
@@ -216,7 +136,8 @@
       });
 
     })();
-  </script>
+  </script> -->
+  <script type="module" src="/src/index.jsx"></script>
 </body>
 
 </html>

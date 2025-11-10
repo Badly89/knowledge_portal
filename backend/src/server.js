@@ -8,21 +8,22 @@ import articleRoutes from './routes/articles.js';
 import { initDatabase } from './utils/database.js';
 import { bigIntMiddleware } from './middleware/bigintMiddleware.js';
 import path from 'path';
-import { fileURLToPath } from 'url';
+// import { fileURLToPath } from 'url';
 
 
 
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 6500;
 
 // ✅ ПРАВИЛЬНЫЙ путь к frontend папке
-const frontendPath = path.join(process.cwd(), 'frontend');
+const frontendPath = path.join(process.cwd(), '../frontend');
 const uploadsPath = path.join(frontendPath, 'public', 'uploads');
 
 // ✅ ПРАВИЛЬНАЯ настройка статических файлов
-app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
-app.use(express.static(path.join(process.cwd(), 'public')));
+// Или если вы хотите обслуживать всю public папку frontend
+app.use(express.static(path.join(frontendPath, 'public')));
+app.use('/uploads', express.static(path.join(frontendPath, 'uploads')));
 
 console.log('Static files configuration:');
 console.log('Frontend path:', frontendPath);

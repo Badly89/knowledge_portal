@@ -1,29 +1,29 @@
 // components/RichTextEditor.js
-import React, { useRef, useEffect } from 'react';
-import { Editor } from '@tinymce/tinymce-react';
-import { tinymceConfig } from '../config/tinymce';
+import React, { useRef, useEffect } from "react";
+import { Editor } from "@tinymce/tinymce-react";
+import { tinymceConfig } from "../config/tinymce";
 
 // Импорты TinyMCE
-import 'tinymce/tinymce';
-import 'tinymce/icons/default/icons';
-import 'tinymce/themes/silver/theme';
-import 'tinymce/plugins/advlist';
-import 'tinymce/plugins/autolink';
-import 'tinymce/plugins/lists';
-import 'tinymce/plugins/link';
-import 'tinymce/plugins/image';
-import 'tinymce/plugins/charmap';
-import 'tinymce/plugins/preview';
-import 'tinymce/plugins/anchor';
-import 'tinymce/plugins/searchreplace';
-import 'tinymce/plugins/visualblocks';
-import 'tinymce/plugins/code';
-import 'tinymce/plugins/fullscreen';
-import 'tinymce/plugins/insertdatetime';
-import 'tinymce/plugins/media';
-import 'tinymce/plugins/table';
-import 'tinymce/plugins/help';
-import 'tinymce/plugins/wordcount';
+import "tinymce/tinymce";
+import "tinymce/icons/default/icons";
+import "tinymce/themes/silver/theme";
+import "tinymce/plugins/advlist";
+import "tinymce/plugins/autolink";
+import "tinymce/plugins/lists";
+import "tinymce/plugins/link";
+import "tinymce/plugins/image";
+import "tinymce/plugins/charmap";
+import "tinymce/plugins/preview";
+import "tinymce/plugins/anchor";
+import "tinymce/plugins/searchreplace";
+import "tinymce/plugins/visualblocks";
+import "tinymce/plugins/code";
+import "tinymce/plugins/fullscreen";
+import "tinymce/plugins/insertdatetime";
+import "tinymce/plugins/media";
+import "tinymce/plugins/table";
+import "tinymce/plugins/help";
+import "tinymce/plugins/wordcount";
 
 function RichTextEditor({ value, onChange, height = 500 }) {
   const editorRef = useRef(null);
@@ -36,12 +36,12 @@ function RichTextEditor({ value, onChange, height = 500 }) {
     };
 
     // Блокируем все события перетаскивания на уровне документа
-    document.addEventListener('dragover', preventDefault, false);
-    document.addEventListener('drop', preventDefault, false);
+    document.addEventListener("dragover", preventDefault, false);
+    document.addEventListener("drop", preventDefault, false);
 
     return () => {
-      document.removeEventListener('dragover', preventDefault, false);
-      document.removeEventListener('drop', preventDefault, false);
+      document.removeEventListener("dragover", preventDefault, false);
+      document.removeEventListener("drop", preventDefault, false);
     };
   }, []);
 
@@ -49,22 +49,22 @@ function RichTextEditor({ value, onChange, height = 500 }) {
   const handleImageUpload = (blobInfo) => {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
-      formData.append('file', blobInfo.blob(), blobInfo.filename());
+      formData.append("file", blobInfo.blob(), blobInfo.filename());
 
-      fetch('/api/articles/tinymce/upload', {
-        method: 'POST',
-        body: formData
+      fetch("/api/articles/tinymce/upload", {
+        method: "POST",
+        body: formData,
       })
-        .then(response => response.json())
-        .then(data => {
+        .then((response) => response.json())
+        .then((data) => {
           if (data.location) {
             resolve(data.location);
           } else {
-            reject('No location in response');
+            reject("No location in response");
           }
         })
-        .catch(error => {
-          reject('Upload error: ' + error.message);
+        .catch((error) => {
+          reject("Upload error: " + error.message);
         });
     });
   };
@@ -82,18 +82,18 @@ function RichTextEditor({ value, onChange, height = 500 }) {
     paste_data_images: false,
 
     // ✅ Настройка file_picker для кнопки "Изображение"
-    file_picker_types: 'image',
+    file_picker_types: "image",
     setup: (editor) => {
-      console.log('TinyMCE editor setup');
+      console.log("TinyMCE editor setup");
 
       // ✅ Блокируем ВСЕ события перетаскивания в редакторе
-      editor.on('drag dragover dragenter dragleave drop', (e) => {
+      editor.on("drag dragover dragenter dragleave drop", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('Editor drag event blocked:', e.type);
+        console.log("Editor drag event blocked:", e.type);
 
-        if (e.type === 'drop') {
-          console.log('File dropped in editor - handling manually');
+        if (e.type === "drop") {
+          console.log("File dropped in editor - handling manually");
           handleDropEvent(editor, e);
         }
 
@@ -101,26 +101,26 @@ function RichTextEditor({ value, onChange, height = 500 }) {
       });
 
       // ✅ Предотвращаем действие по умолчанию для других событий
-      editor.on('keydown', (e) => {
+      editor.on("keydown", (e) => {
         // Блокируем некоторые комбинации клавиш, которые могут вызывать перезагрузку
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        if ((e.ctrlKey || e.metaKey) && e.key === "s") {
           e.preventDefault();
-          console.log('Ctrl+S blocked');
+          console.log("Ctrl+S blocked");
         }
       });
-    }
+    },
   };
 
   // ✅ Функция для обработки перетаскивания файлов
   const handleDropEvent = (editor, e) => {
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      Array.from(files).forEach(file => {
-        if (file.type.startsWith('image/')) {
+      Array.from(files).forEach((file) => {
+        if (file.type.startsWith("image/")) {
           const blobInfo = {
             blob: () => file,
             filename: () => file.name,
-            id: () => Date.now().toString()
+            id: () => Date.now().toString(),
           };
 
           // Вставляем placeholder
@@ -131,21 +131,22 @@ function RichTextEditor({ value, onChange, height = 500 }) {
 
           // Загружаем изображение
           handleImageUpload(blobInfo)
-            .then(imageUrl => {
+            .then((imageUrl) => {
               const img = editor.dom.get(placeholderId);
               if (img) {
                 img.src = imageUrl;
-                img.classList.remove('uploading');
-                img.removeAttribute('id');
+                img.classList.remove("uploading");
+                img.removeAttribute("id");
               }
             })
-            .catch(error => {
-              console.error('Failed to upload dropped image:', error);
+            .catch((error) => {
+              console.error("Failed to upload dropped image:", error);
               const img = editor.dom.get(placeholderId);
               if (img) {
-                img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmZWJlYiIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZDMwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iMC4zNWVtIj5FcnJvcjwvdGV4dD48L3N2Zz4=';
-                img.alt = 'Upload failed';
-                img.classList.remove('uploading');
+                img.src =
+                  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmZWJlYiIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZDMwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iMC4zNWVtIj5FcnJvcjwvdGV4dD48L3N2Zz4=";
+                img.alt = "Upload failed";
+                img.classList.remove("uploading");
               }
             });
         }
@@ -160,8 +161,7 @@ function RichTextEditor({ value, onChange, height = 500 }) {
       onDragOver={(e) => {
         e.preventDefault();
         e.stopPropagation();
-      }
-      }
+      }}
       onDrop={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -170,7 +170,7 @@ function RichTextEditor({ value, onChange, height = 500 }) {
       <Editor
         onInit={(evt, editor) => {
           editorRef.current = editor;
-          console.log('TinyMCE editor initialized');
+          console.log("TinyMCE editor initialized");
         }}
         value={value}
         onEditorChange={(newValue, editor) => {
@@ -179,9 +179,7 @@ function RichTextEditor({ value, onChange, height = 500 }) {
         }}
         init={editorInit}
       />
-
-
-    </div >
+    </div>
   );
 }
 

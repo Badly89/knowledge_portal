@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import RichTextEditor from '../components/RichTextEditor';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import RichTextEditor from "../components/RichTextEditor";
 
 function CreateArticle() {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [categoryId, setCategoryId] = useState('');
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState([]);
   const [files, setFiles] = useState([]);
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
@@ -21,17 +21,17 @@ function CreateArticle() {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('/api/categories');
+      const response = await axios.get("/api/categories");
       setCategories(response.data);
     } catch (error) {
-      console.error('Ошибка загрузки категорий:', error);
+      console.error("Ошибка загрузки категорий:", error);
     }
   };
 
   const handleFileUpload = (e, type) => {
     const selectedFiles = Array.from(e.target.files);
 
-    selectedFiles.forEach(file => {
+    selectedFiles.forEach((file) => {
       const reader = new FileReader();
 
       reader.onload = (e) => {
@@ -39,13 +39,13 @@ function CreateArticle() {
           name: file.name,
           type: file.type,
           size: file.size,
-          data: e.target.result.split(',')[1] // Убираем префикс data URL
+          data: e.target.result.split(",")[1], // Убираем префикс data URL
         };
 
-        if (type === 'file') {
-          setFiles(prev => [...prev, fileData]);
+        if (type === "file") {
+          setFiles((prev) => [...prev, fileData]);
         } else {
-          setImages(prev => [...prev, fileData]);
+          setImages((prev) => [...prev, fileData]);
         }
       };
 
@@ -56,20 +56,20 @@ function CreateArticle() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      await axios.post('/api/articles', {
+      await axios.post("/api/articles", {
         title,
         content,
         category_id: categoryId,
         files,
-        images
+        images,
       });
 
-      navigate('/articles');
+      navigate("/articles");
     } catch (error) {
-      setError(error.response?.data?.error || 'Не удалось создать статью');
+      setError(error.response?.data?.error || "Не удалось создать статью");
     } finally {
       setLoading(false);
     }
@@ -100,7 +100,7 @@ function CreateArticle() {
             required
           >
             <option value="">Выберите категорию</option>
-            {categories.map(category => (
+            {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
               </option>
@@ -110,11 +110,7 @@ function CreateArticle() {
 
         <div className="form-group">
           <label>Содержание:</label>
-          <RichTextEditor
-            value={content}
-            onChange={setContent}
-            height={400}
-          />
+          <RichTextEditor value={content} onChange={setContent} height={400} />
         </div>
 
         <div className="form-group">
@@ -122,7 +118,7 @@ function CreateArticle() {
           <input
             type="file"
             multiple
-            onChange={(e) => handleFileUpload(e, 'file')}
+            onChange={(e) => handleFileUpload(e, "file")}
           />
           {files.length > 0 && (
             <div>
@@ -142,7 +138,7 @@ function CreateArticle() {
             type="file"
             multiple
             accept="image/*"
-            onChange={(e) => handleFileUpload(e, 'image')}
+            onChange={(e) => handleFileUpload(e, "image")}
           />
           {images.length > 0 && (
             <div>
@@ -157,7 +153,7 @@ function CreateArticle() {
         </div>
 
         <button type="submit" disabled={loading}>
-          {loading ? 'Создание...' : 'Создать статью'}
+          {loading ? "Создание..." : "Создать статью"}
         </button>
       </form>
     </div>
