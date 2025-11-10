@@ -76,7 +76,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false, // Отключаем sourcemaps для production
-    
+
     // Увеличиваем лимит для предупреждения
     chunkSizeWarningLimit: 1500,
 
@@ -98,18 +98,18 @@ export default defineConfig({
           }
           return 'assets/[name]-[hash][extname]'
         },
-        
+
         // Оптимизация разделения кода
-        // manualChunks: {
-        //   vendor: ['react', 'react-dom', 'react-router-dom'],
-        //   utils: ['axios', 'lodash', 'moment'],
-        //   editor: ['@tinymce/tinymce-react', 'tinymce']
-        // }
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          utils: ['axios', 'lodash', 'moment'],
+          editor: ['@tinymce/tinymce-react', 'tinymce']
+        }
       }
     },
 
     minify: 'esbuild',
-    
+
     // Очистка выходной директории
     emptyOutDir: true,
   },
