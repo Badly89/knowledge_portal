@@ -20,20 +20,42 @@ export default defineConfig({
       minify: true,
       inject: {
         data: {
-          title: 'Your App Title',
+          title: 'Knowledge Portal',
+          // Добавляем базовый тег для корректных путей в production
+          inject: {
+            tags: [
+              {
+                tag: 'base',
+                attrs: {
+                  href: '/'
+                },
+                injectTo: 'head'
+              }
+            ]
+          }
         }
       }
     }),
 
-    // Оставляем только gzip для разработки
-    process.env.NODE_ENV === 'production' && compression({
+    // Включаем сжатие для production
+    compression({
       algorithm: 'gzip',
-      threshold: 8192,
+      ext: '.gz',
+      threshold: 10240, // 10KB
     }),
 
-    process.env.ANALYZE && visualizer({
+    // Brotli сжатие для production
+    compression({
+      algorithm: 'brotliCompress',
+      ext: '.br',
+      threshold: 10240,
+    }),
+
+    process.env.ANALYZE === 'true' && visualizer({
       filename: 'dist/bundle-report.html',
       open: false,
+      gzipSize: true,
+      brotliSize: true,
     })
   ].filter(Boolean),
 
@@ -48,34 +70,48 @@ export default defineConfig({
     },
   },
 
+  // ✅ Ключевые настройки для production
+  base: './', // или '/' если приложение развернуто в корне
+
   build: {
     outDir: 'dist',
-    sourcemap: false,
-
+    sourcemap: false, // Отключаем sourcemaps для production
+    
     // Увеличиваем лимит для предупреждения
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1500,
 
     rollupOptions: {
       output: {
-        chunkFileNames: 'static/js/[name]-[hash].js',
-        entryFileNames: 'static/js/[name]-[hash].js',
+        // Оптимизация chunk naming для кэширования
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: (assetInfo) => {
           const extType = assetInfo.name.split('.')[1]
           if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
-            return 'static/images/[name]-[hash][extname]'
+            return 'assets/images/[name]-[hash][extname]'
           }
           if (/woff|woff2|eot|ttf|otf/i.test(extType)) {
-            return 'static/fonts/[name]-[hash][extname]'
+            return 'assets/fonts/[name]-[hash][extname]'
           }
           if (/css/i.test(extType)) {
-            return 'static/css/[name]-[hash][extname]'
+            return 'assets/css/[name]-[hash][extname]'
           }
-          return 'static/assets/[name]-[hash][extname]'
+          return 'assets/[name]-[hash][extname]'
         },
+        
+        // Оптимизация разделения кода
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          utils: ['axios', 'lodash', 'moment'],
+          editor: ['@tinymce/tinymce-react', 'tinymce']
+        }
       }
     },
 
     minify: 'esbuild',
+    
+    // Очистка выходной директории
+    emptyOutDir: true,
   },
 
   css: {
@@ -83,19 +119,19 @@ export default defineConfig({
       localsConvention: 'camelCase',
       generateScopedName: '[name]__[local]___[hash:base64:5]'
     },
+    // Минификация CSS для production
+    postcss: './postcss.config.js'
   },
 
   server: {
     port: 3005,
+    host: true, // Разрешаем доступ с других устройств
     proxy: {
-      // Прокси для API запросов
       '/api': {
-        target: 'http://localhost:6500', // ваш бэкенд
+        target: 'http://localhost:6500',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path
       },
-      // Можно добавить другие API endpoints
       '/uploads': {
         target: 'http://localhost:6500',
         changeOrigin: true
@@ -103,15 +139,21 @@ export default defineConfig({
     }
   },
 
+  // ✅ Production оптимизации
   optimizeDeps: {
-    // Предварительно bundle крупные зависимости
-    // include: [
-    //   'react',
-    //   'react-dom',
-    //   'react-router-dom',
-    //   // добавьте другие крупные зависимости
-    // ],
-    // Исключаем из предварительной обработки
-    exclude: []
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'axios',
+      '@tinymce/tinymce-react'
+    ],
+    exclude: ['tinymce'] // TinyMCE лучше исключить
+  },
+
+  // ✅ Настройки для предзагрузки ресурсов
+  preview: {
+    port: 3005,
+    host: true
   }
 })
