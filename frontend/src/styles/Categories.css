@@ -214,7 +214,7 @@ header-content h1 {
 }
 
 .category-description {
-  color: rgba(255, 255, 255, 0.8);
+  /* color: rgba(255, 255, 255, 0.8); */
   line-height: 1.5;
   font-size: 0.95rem;
 }
