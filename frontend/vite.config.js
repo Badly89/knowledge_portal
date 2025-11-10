@@ -100,11 +100,11 @@ export default defineConfig({
         },
         
         // Оптимизация разделения кода
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          utils: ['axios', 'lodash', 'moment'],
-          editor: ['@tinymce/tinymce-react', 'tinymce']
-        }
+        // manualChunks: {
+        //   vendor: ['react', 'react-dom', 'react-router-dom'],
+        //   utils: ['axios', 'lodash', 'moment'],
+        //   editor: ['@tinymce/tinymce-react', 'tinymce']
+        // }
       }
     },
 
