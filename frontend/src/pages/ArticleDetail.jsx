@@ -17,6 +17,11 @@ function ArticleDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Состояния для слайд-шоу
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const slideIntervalRef = useRef(null);
+
   // Состояния для редактирования
   const [showEditModal, setShowEditModal] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
@@ -24,6 +29,7 @@ function ArticleDetail() {
     title: "",
     content: "",
     category_id: "",
+    enable_slideshow: false,
   });
   const [categories, setCategories] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
@@ -78,6 +84,94 @@ function ArticleDetail() {
       console.error("Ошибка загрузки категорий:", error);
     }
   };
+
+  // Функции для извлечения изображений из контента и удаления их из HTML
+  const extractImagesFromContent = (content) => {
+    if (!content) return [];
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, "text/html");
+    const images = Array.from(doc.querySelectorAll("img"));
+
+    return images.map((img) => ({
+      src: img.src,
+      alt: img.alt || "Изображение из статьи",
+      title: img.title || img.alt || "Изображение из статьи",
+    }));
+  };
+
+  // Удаление изображений из HTML контента для отображения
+  const getContentWithoutImages = (content) => {
+    if (!content) return "";
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, "text/html");
+    const images = doc.querySelectorAll("img");
+
+    // Удаляем все изображения из контента
+    images.forEach((img) => {
+      img.remove();
+    });
+
+    return doc.body.innerHTML;
+  };
+
+  // Получение изображений для слайд-шоу (только из контента)
+  const getSlideshowImages = () => {
+    if (!article) return [];
+    return extractImagesFromContent(article.content);
+  };
+
+  // Автоматическое определение - показывать ли слайд-шоу
+  const shouldShowSlideshow = () => {
+    const slideshowImages = getSlideshowImages();
+    return article?.enable_slideshow && slideshowImages.length > 0;
+  };
+
+  // Управление слайд-шоу
+  const startSlideshow = () => {
+    const images = getSlideshowImages();
+    if (images.length <= 1) return;
+
+    setIsPlaying(true);
+    slideIntervalRef.current = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % images.length);
+    }, 3000);
+  };
+
+  const stopSlideshow = () => {
+    setIsPlaying(false);
+    if (slideIntervalRef.current) {
+      clearInterval(slideIntervalRef.current);
+      slideIntervalRef.current = null;
+    }
+  };
+
+  const nextSlide = () => {
+    const images = getSlideshowImages();
+    setCurrentSlide((prev) => (prev + 1) % images.length);
+  };
+
+  const prevSlide = () => {
+    const images = getSlideshowImages();
+    setCurrentSlide((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const goToSlide = (index) => {
+    setCurrentSlide(index);
+  };
+
+  // Автоматическое управление слайд-шоу при изменении состояния
+  useEffect(() => {
+    const images = getSlideshowImages();
+    if (isPlaying && images.length > 1) {
+      startSlideshow();
+    } else {
+      stopSlideshow();
+    }
+
+    return () => stopSlideshow();
+  }, [isPlaying, article]);
 
   // Безопасное получение файлов и изображений
   const getFiles = () => {
@@ -168,9 +262,9 @@ function ArticleDetail() {
         title: articleData.title,
         content: articleData.content,
         category_id: articleData.category_id,
+        enable_slideshow: articleData.enable_slideshow || false,
       });
 
-      // Сбрасываем состояния файлов
       setNewFiles([]);
       setNewImages([]);
       setFilesToRemove([]);
@@ -192,11 +286,11 @@ function ArticleDetail() {
       title: "",
       content: "",
       category_id: "",
+      enable_slideshow: false,
     });
     setNewFiles([]);
     setNewImages([]);
     setFilesToRemove([]);
-    setImagesToRemove([]);
   };
 
   // Обработчик изменения обычных полей формы
@@ -208,13 +302,23 @@ function ArticleDetail() {
     }));
   };
 
-  // Обработчик изменения контента редактора - ВАЖНО: исправленная функция
+  // Обработчик изменения чекбокса слайд-шоу
+  const handleSlideshowToggle = (e) => {
+    const { checked } = e.target;
+    setEditFormData((prev) => ({
+      ...prev,
+      enable_slideshow: checked,
+    }));
+  };
+
+  // Обработчик изменения контента редактора
   const handleContentChange = (newContent) => {
     setEditFormData((prev) => ({
       ...prev,
       content: newContent,
     }));
   };
+
   // Загрузка новых файлов
   const handleNewFileUpload = (e, type) => {
     const selectedFiles = Array.from(e.target.files);
@@ -307,7 +411,7 @@ function ArticleDetail() {
 
       setError("");
       closeEditModal();
-      fetchArticle(); // Обновляем данные статьи
+      fetchArticle();
     } catch (error) {
       console.error("Ошибка обновления статьи:", error);
       setError(error.response?.data?.error || "Не удалось обновить статью");
@@ -370,10 +474,14 @@ function ArticleDetail() {
       </div>
     );
   }
-
   const files = getFiles();
   const images = getImages();
   const isAdmin = isAuthenticated && user?.role === "admin";
+  const slideshowImages = getSlideshowImages();
+  const hasSlideshow = shouldShowSlideshow();
+  const contentWithoutImages = article
+    ? getContentWithoutImages(article.content)
+    : "";
 
   return (
     <div className="article-detail">
@@ -430,6 +538,26 @@ function ArticleDetail() {
                   ))}
                 </select>
               </div>
+              {/* Переключатель слайд-шоу */}
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="enable_slideshow"
+                    checked={editFormData.enable_slideshow}
+                    onChange={handleSlideshowToggle}
+                  />
+                  <span className="checkmark"></span>
+                  Включить слайд-шоу для изображений из содержания
+                </label>
+                <small className="form-help">
+                  {extractImagesFromContent(editFormData.content).length > 0
+                    ? `В содержании обнаружено ${
+                        extractImagesFromContent(editFormData.content).length
+                      } изображений. Они будут отображаться в слайд-шоу.`
+                    : "При включении этой опции изображения из редактора будут отображаться только в слайд-шоу и не будут показываться в основном тексте статьи."}
+                </small>
+              </div>
 
               <div className="form-group">
                 <label>Содержание *</label>
@@ -438,6 +566,18 @@ function ArticleDetail() {
                   onChange={handleContentChange}
                   height={400}
                 />
+                {(editFormData.enable_slideshow ||
+                  extractImagesFromContent(editFormData.content).length >
+                    0) && (
+                  <div className="slideshow-preview-info">
+                    <i className="fas fa-info-circle"></i>
+                    {extractImagesFromContent(editFormData.content).length > 0
+                      ? `Обнаружено ${
+                          extractImagesFromContent(editFormData.content).length
+                        } изображений в содержании. Они будут отображаться в слайд-шоу.`
+                      : "Изображения, добавленные в редактор, будут отображаться только в слайд-шоу."}
+                  </div>
+                )}
               </div>
 
               {/* Существующие файлы */}
@@ -1000,27 +1140,100 @@ function ArticleDetail() {
           </div>
         </header>
 
+        {/* Слайд-шоу */}
+        {hasSlideshow && (
+          <div className="article-slideshow">
+            <div className="slideshow-header">
+              <h3>
+                <i className="fas fa-images me-2"></i>
+                Галерея изображений
+              </h3>
+              {slideshowImages.length > 1 && (
+                <div className="slideshow-controls">
+                  <button
+                    onClick={isPlaying ? stopSlideshow : startSlideshow}
+                    className={`slideshow-toggle ${isPlaying ? "playing" : ""}`}
+                  >
+                    <i className={`fas fa-${isPlaying ? "pause" : "play"}`}></i>
+                    {isPlaying ? "Пауза" : "Автопрокрутка"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="slideshow-container">
+              <div className="slide-wrapper">
+                <img
+                  src={slideshowImages[currentSlide]?.src}
+                  alt={slideshowImages[currentSlide]?.alt}
+                  className="slide-image"
+                />
+              </div>
+
+              {slideshowImages.length > 1 && (
+                <>
+                  <button
+                    className="slideshow-nav slideshow-prev"
+                    onClick={prevSlide}
+                    aria-label="Предыдущее изображение"
+                  >
+                    <i className="fas fa-chevron-left"></i>
+                  </button>
+                  <button
+                    className="slideshow-nav slideshow-next"
+                    onClick={nextSlide}
+                    aria-label="Следующее изображение"
+                  >
+                    <i className="fas fa-chevron-right"></i>
+                  </button>
+
+                  <div className="slideshow-dots">
+                    {slideshowImages.map((_, index) => (
+                      <button
+                        key={index}
+                        className={`dot ${
+                          index === currentSlide ? "active" : ""
+                        }`}
+                        onClick={() => goToSlide(index)}
+                        aria-label={`Перейти к изображению ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="slideshow-counter">
+                    {currentSlide + 1} / {slideshowImages.length}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Основной контент БЕЗ изображений */}
         <div className="article-body">
           <div
             className="content"
             dangerouslySetInnerHTML={{
-              __html: article.content.replace(/\n/g, "<br>"),
+              __html: hasSlideshow
+                ? contentWithoutImages
+                : article.content.replace(/\n/g, "<br>"),
             }}
           />
         </div>
 
+        {/* Отдельные изображения (прикрепленные файлы) показываем всегда */}
         {images.length > 0 && (
           <div className="article-images">
             <h3>
               <i className="fas fa-images me-2"></i>
-              Изображения ({images.length})
+              Дополнительные изображения ({images.length})
             </h3>
             <div className="images-grid">
               {images.map((image, index) => (
                 <div key={index} className="image-item">
                   <div
                     className="image-thumbnail-container"
-                    onClick={() => openImageModal(image, index)}
+                    onClick={() => openImageModal(image, index, "attachment")}
                   >
                     <img
                       src={`data:${image.type};base64,${image.data}`}
@@ -1037,7 +1250,7 @@ function ArticleDetail() {
             </div>
           </div>
         )}
-
+        {/* Файлы всегда показываем */}
         {files.length > 0 && (
           <div className="article-attachments">
             <h3>
