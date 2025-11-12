@@ -14,21 +14,21 @@
   <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="src/styles/global.css">
+  <!-- <link rel="stylesheet" href="src/styles/global.css"> -->
   <style>
     /* Minimal critical CSS to avoid FOUC */
-    /* #root {
+    #root {
       min-height: 100vh;
-    } */
+    }
 
     /* Loading indicator */
-    /* .loading {
+    .loading {
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
       font-family: system-ui, -apple-system, sans-serif;
-    } */
+    }
   </style>
 </head>
 
@@ -41,11 +41,11 @@
   </noscript>
 
   <!-- Loading screen -->
-  <!-- <div id="loading-screen">
+  <div id="loading-screen">
     <div class="loading-spinner"></div>
     <div class="loading-text">Портал Базы Знаний</div>
     <div class="loading-subtext">Загрузка...</div>
-  </div> -->
+  </div>
 
   <!-- React app root -->
   <div id="root">
@@ -82,7 +82,7 @@
     window.__APP_LOADED__ = false;
   </script>
 
-  <!-- <script>
+  <script>
     // Enhanced loading screen management
     (function () {
       'use strict';
@@ -136,7 +136,7 @@
       });
 
     })();
-  </script> -->
+  </script>
   <script type="module" src="/src/index.jsx"></script>
 </body>
 

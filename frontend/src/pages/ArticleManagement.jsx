@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
-import RichTextEditor from '../components/RichTextEditor';
-
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import axios from "axios";
+import RichTextEditor from "../components/RichTextEditor";
 
 function ArticleManagement() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [categories, setCategories] = useState([]);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [editingArticle, setEditingArticle] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({
-    title: '',
-    content: '',
-    category_id: ''
+    title: "",
+    content: "",
+    category_id: "",
+    enable_slideshow: false,
   });
   const [editLoading, setEditLoading] = useState(false);
   const [newFiles, setNewFiles] = useState([]);
@@ -35,11 +35,11 @@ function ArticleManagement() {
 
   const fetchArticles = async () => {
     try {
-      const response = await axios.get('/api/articles');
+      const response = await axios.get("/api/articles");
       setArticles(response.data);
     } catch (error) {
-      console.error('Ошибка загрузки статей:', error);
-      setError('Не удалось загрузить статьи');
+      console.error("Ошибка загрузки статей:", error);
+      setError("Не удалось загрузить статьи");
     } finally {
       setLoading(false);
     }
@@ -47,15 +47,38 @@ function ArticleManagement() {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('/api/categories');
+      const response = await axios.get("/api/categories");
       setCategories(response.data);
     } catch (error) {
-      console.error('Ошибка загрузки категорий:', error);
+      console.error("Ошибка загрузки категорий:", error);
     }
   };
 
+  // Функции для работы с изображениями из контента
+  const extractImagesFromContent = (content) => {
+    if (!content) return [];
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, "text/html");
+    const images = Array.from(doc.querySelectorAll("img"));
+
+    return images.map((img) => ({
+      src: img.src,
+      alt: img.alt || "Изображение из статьи",
+      title: img.title || img.alt || "Изображение из статьи",
+    }));
+  };
+
+  const hasImagesInContent = (content) => {
+    return extractImagesFromContent(content).length > 0;
+  };
+
   const handleDeleteArticle = async (articleId, articleTitle) => {
-    if (!window.confirm(`Вы уверены, что хотите удалить статью "${articleTitle}"?`)) {
+    if (
+      !window.confirm(
+        `Вы уверены, что хотите удалить статью "${articleTitle}"?`
+      )
+    ) {
       return;
     }
 
@@ -64,8 +87,8 @@ function ArticleManagement() {
       setSuccess(`Статья "${articleTitle}" успешно удалена!`);
       fetchArticles();
     } catch (error) {
-      console.error('Ошибка удаления статьи:', error);
-      setError(error.response?.data?.error || 'Не удалось удалить статью');
+      console.error("Ошибка удаления статьи:", error);
+      setError(error.response?.data?.error || "Не удалось удалить статью");
     }
   };
 
@@ -80,7 +103,8 @@ function ArticleManagement() {
       setEditFormData({
         title: article.title,
         content: article.content,
-        category_id: article.category_id
+        category_id: article.category_id,
+        enable_slideshow: article.enable_slideshow || false,
       });
 
       // Сбрасываем состояния файлов
@@ -91,8 +115,8 @@ function ArticleManagement() {
 
       setShowEditModal(true);
     } catch (error) {
-      console.error('Ошибка загрузки статьи для редактирования:', error);
-      setError('Не удалось загрузить статью для редактирования');
+      console.error("Ошибка загрузки статьи для редактирования:", error);
+      setError("Не удалось загрузить статью для редактирования");
     } finally {
       setEditLoading(false);
     }
@@ -103,9 +127,10 @@ function ArticleManagement() {
     setShowEditModal(false);
     setEditingArticle(null);
     setEditFormData({
-      title: '',
-      content: '',
-      category_id: ''
+      title: "",
+      content: "",
+      category_id: "",
+      enable_slideshow: false,
     });
     setNewFiles([]);
     setNewImages([]);
@@ -115,26 +140,31 @@ function ArticleManagement() {
 
   // Обработчик изменения обычных полей формы
   const handleEditFormChange = (e) => {
-    const { name, value } = e.target;
-    setEditFormData(prev => ({
+    const { name, value, type, checked } = e.target;
+    setEditFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   // Обработчик изменения контента редактора
   const handleContentChange = (newContent) => {
-    setEditFormData(prev => ({
+    setEditFormData((prev) => ({
       ...prev,
-      content: newContent
+      content: newContent,
     }));
+  };
+
+  const handleSlideshowToggle = (e) => {
+    const { checked } = e.target;
+    setEditFormData((prev) => ({ ...prev, enable_slideshow: checked }));
   };
 
   // Загрузка новых файлов
   const handleNewFileUpload = (e, type) => {
     const selectedFiles = Array.from(e.target.files);
 
-    selectedFiles.forEach(file => {
+    selectedFiles.forEach((file) => {
       const reader = new FileReader();
 
       reader.onload = (e) => {
@@ -142,44 +172,44 @@ function ArticleManagement() {
           name: file.name,
           type: file.type,
           size: file.size,
-          data: e.target.result.split(',')[1]
+          data: e.target.result.split(",")[1],
         };
 
-        if (type === 'file') {
-          setNewFiles(prev => [...prev, fileData]);
+        if (type === "file") {
+          setNewFiles((prev) => [...prev, fileData]);
         } else {
-          setNewImages(prev => [...prev, fileData]);
+          setNewImages((prev) => [...prev, fileData]);
         }
       };
 
       reader.readAsDataURL(file);
     });
 
-    e.target.value = '';
+    e.target.value = "";
   };
 
   // Управление существующими файлами
   const removeExistingFile = (fileId) => {
-    setFilesToRemove(prev => [...prev, fileId]);
+    setFilesToRemove((prev) => [...prev, fileId]);
   };
 
   const removeExistingImage = (imageId) => {
-    setImagesToRemove(prev => [...prev, imageId]);
+    setImagesToRemove((prev) => [...prev, imageId]);
   };
 
   const restoreExistingFile = (fileId) => {
-    setFilesToRemove(prev => prev.filter(id => id !== fileId));
+    setFilesToRemove((prev) => prev.filter((id) => id !== fileId));
   };
 
   const restoreExistingImage = (imageId) => {
-    setImagesToRemove(prev => prev.filter(id => id !== imageId));
+    setImagesToRemove((prev) => prev.filter((id) => id !== imageId));
   };
 
   // Удаление всех файлов
   const removeAllFiles = () => {
     if (editingArticle) {
       const files = getFiles(editingArticle);
-      setFilesToRemove(files.map(file => file.id));
+      setFilesToRemove(files.map((file) => file.id));
     }
   };
 
@@ -187,7 +217,7 @@ function ArticleManagement() {
   const removeAllImages = () => {
     if (editingArticle) {
       const images = getImages(editingArticle);
-      setImagesToRemove(images.map(image => image.id));
+      setImagesToRemove(images.map((image) => image.id));
     }
   };
 
@@ -203,10 +233,10 @@ function ArticleManagement() {
 
   // Удаление новых файлов
   const removeNewFile = (index, type) => {
-    if (type === 'file') {
-      setNewFiles(prev => prev.filter((_, i) => i !== index));
+    if (type === "file") {
+      setNewFiles((prev) => prev.filter((_, i) => i !== index));
     } else {
-      setNewImages(prev => prev.filter((_, i) => i !== index));
+      setNewImages((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -221,15 +251,15 @@ function ArticleManagement() {
         files: newFiles,
         images: newImages,
         filesToRemove,
-        imagesToRemove
+        imagesToRemove,
       });
 
       setSuccess(`Статья "${editFormData.title}" успешно обновлена!`);
       closeEditModal();
       fetchArticles();
     } catch (error) {
-      console.error('Ошибка обновления статьи:', error);
-      setError(error.response?.data?.error || 'Не удалось обновить статью');
+      console.error("Ошибка обновления статьи:", error);
+      setError(error.response?.data?.error || "Не удалось обновить статью");
     } finally {
       setEditLoading(false);
     }
@@ -239,11 +269,11 @@ function ArticleManagement() {
   const getFiles = (article) => {
     try {
       if (!article.files) return [];
-      return typeof article.files === 'string'
+      return typeof article.files === "string"
         ? JSON.parse(article.files)
         : article.files;
     } catch (error) {
-      console.error('Ошибка парсинга files:', error);
+      console.error("Ошибка парсинга files:", error);
       return [];
     }
   };
@@ -251,46 +281,52 @@ function ArticleManagement() {
   const getImages = (article) => {
     try {
       if (!article.images) return [];
-      return typeof article.images === 'string'
+      return typeof article.images === "string"
         ? JSON.parse(article.images)
         : article.images;
     } catch (error) {
-      console.error('Ошибка парсинга images:', error);
+      console.error("Ошибка парсинга images:", error);
       return [];
     }
   };
 
   const getArticleExcerpt = (content, maxLength = 100) => {
-    if (!content) return '';
-    const text = content.replace(/<[^>]*>/g, ''); // Удаляем HTML теги
+    if (!content) return "";
+    const text = content.replace(/<[^>]*>/g, ""); // Удаляем HTML теги
     return text.length > maxLength
-      ? text.substring(0, maxLength) + '...'
+      ? text.substring(0, maxLength) + "..."
       : text;
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   // Фильтрация статей
-  const filteredArticles = articles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredArticles = articles.filter((article) => {
+    const matchesSearch =
+      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       article.content.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || article.category_id == selectedCategory;
+    const matchesCategory =
+      !selectedCategory || article.category_id == selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   // Получение существующих файлов и изображений для отображения
   const existingFiles = editingArticle ? getFiles(editingArticle) : [];
   const existingImages = editingArticle ? getImages(editingArticle) : [];
-  const displayFiles = existingFiles.filter(file => !filesToRemove.includes(file.id));
-  const displayImages = existingImages.filter(image => !imagesToRemove.includes(image.id));
+  const displayFiles = existingFiles.filter(
+    (file) => !filesToRemove.includes(file.id)
+  );
+  const displayImages = existingImages.filter(
+    (image) => !imagesToRemove.includes(image.id)
+  );
 
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || user?.role !== "admin") {
     return (
       <div className="access-denied">
         <h2>Доступ запрещен</h2>
@@ -311,7 +347,10 @@ function ArticleManagement() {
       {/* Модальное окно редактирования */}
       {showEditModal && (
         <div className="modal-overlay" onClick={closeEditModal}>
-          <div className="modal-content edit-modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-content edit-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>Редактирование статьи</h2>
               <button
@@ -351,7 +390,7 @@ function ArticleManagement() {
                   required
                 >
                   <option value="">Выберите категорию</option>
-                  {categories.map(category => (
+                  {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
@@ -359,22 +398,45 @@ function ArticleManagement() {
                 </select>
               </div>
 
+              {/* Переключатель слайд-шоу */}
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="enable_slideshow"
+                    checked={editFormData.enable_slideshow}
+                    onChange={handleSlideshowToggle}
+                  />
+                  <span className="checkmark"></span>
+                  Включить слайд-шоу для изображений из содержания
+                </label>
+                <small className="form-help">
+                  {hasImagesInContent(editFormData.content)
+                    ? `В содержании обнаружено ${
+                        extractImagesFromContent(editFormData.content).length
+                      } изображений. Они будут отображаться в слайд-шоу.`
+                    : "При включении этой опции изображения из редактора будут отображаться только в слайд-шоу и не будут показываться в основном тексте статьи."}
+                </small>
+              </div>
+
               <div className="form-group">
                 <label>Содержание *</label>
-                {/* <textarea
-                  name="content"
-                  value={editFormData.content}
-                  onChange={handleEditFormChange}
-                  rows="10"
-                  required
-                  placeholder="Введите содержание статьи"
-                /> */}
-
                 <RichTextEditor
                   value={editFormData.content}
                   onChange={handleContentChange}
                   height={300}
                 />
+                {(editFormData.enable_slideshow ||
+                  hasImagesInContent(editFormData.content)) && (
+                  <div className="slideshow-preview-info">
+                    <i className="fas fa-info-circle"></i>
+                    {hasImagesInContent(editFormData.content)
+                      ? `Обнаружено ${
+                          extractImagesFromContent(editFormData.content).length
+                        } изображений в содержании. Они будут отображаться в слайд-шоу.`
+                      : "Изображения, добавленные в редактор, будут отображаться только в слайд-шоу."}
+                  </div>
+                )}
               </div>
 
               {/* Существующие файлы */}
@@ -410,8 +472,12 @@ function ArticleManagement() {
                                 <div className="file-info">
                                   <span className="file-icon">📎</span>
                                   <div className="file-details">
-                                    <span className="file-name">{file.name}</span>
-                                    <span className="file-size">{formatFileSize(file.size)}</span>
+                                    <span className="file-name">
+                                      {file.name}
+                                    </span>
+                                    <span className="file-size">
+                                      {formatFileSize(file.size)}
+                                    </span>
                                   </div>
                                 </div>
                                 <div>
@@ -434,7 +500,9 @@ function ArticleManagement() {
                       {filesToRemove.length > 0 && (
                         <div className="removed-files">
                           <div className="removed-header">
-                            <h4>Файлы для удаления ({filesToRemove.length}):</h4>
+                            <h4>
+                              Файлы для удаления ({filesToRemove.length}):
+                            </h4>
                             <div>
                               <button
                                 type="button"
@@ -449,14 +517,18 @@ function ArticleManagement() {
                           </div>
                           <ul className="files-list">
                             {existingFiles
-                              .filter(file => filesToRemove.includes(file.id))
+                              .filter((file) => filesToRemove.includes(file.id))
                               .map((file) => (
                                 <li key={file.id} className="file-item removed">
                                   <div className="file-info">
                                     <span className="file-icon">🗑️</span>
                                     <div className="file-details">
-                                      <span className="file-name">{file.name}</span>
-                                      <span className="file-size">{formatFileSize(file.size)}</span>
+                                      <span className="file-name">
+                                        {file.name}
+                                      </span>
+                                      <span className="file-size">
+                                        {formatFileSize(file.size)}
+                                      </span>
                                     </div>
                                   </div>
                                   <button
@@ -484,7 +556,7 @@ function ArticleManagement() {
                   <input
                     type="file"
                     multiple
-                    onChange={(e) => handleNewFileUpload(e, 'file')}
+                    onChange={(e) => handleNewFileUpload(e, "file")}
                     className="file-input"
                   />
                   {newFiles.length > 0 && (
@@ -497,12 +569,14 @@ function ArticleManagement() {
                               <span className="file-icon">🆕</span>
                               <div className="file-details">
                                 <span className="file-name">{file.name}</span>
-                                <span className="file-size">{formatFileSize(file.size)}</span>
+                                <span className="file-size">
+                                  {formatFileSize(file.size)}
+                                </span>
                               </div>
                             </div>
                             <button
                               type="button"
-                              onClick={() => removeNewFile(index, 'file')}
+                              onClick={() => removeNewFile(index, "file")}
                               className="btn-remove"
                               title="Удалить файл"
                             >
@@ -545,7 +619,10 @@ function ArticleManagement() {
                           <h4>Текущие изображения ({displayImages.length}):</h4>
                           <div className="images-grid">
                             {displayImages.map((image) => (
-                              <div key={image.id} className="image-item existing">
+                              <div
+                                key={image.id}
+                                className="image-item existing"
+                              >
                                 <div className="image-preview">
                                   <img
                                     src={`data:${image.type};base64,${image.data}`}
@@ -555,7 +632,9 @@ function ArticleManagement() {
                                   <div className="image-overlay">
                                     <button
                                       type="button"
-                                      onClick={() => removeExistingImage(image.id)}
+                                      onClick={() =>
+                                        removeExistingImage(image.id)
+                                      }
                                       className="btn-remove-image"
                                       title="Удалить изображение"
                                     >
@@ -564,7 +643,9 @@ function ArticleManagement() {
                                   </div>
                                 </div>
                                 <div className="image-info">
-                                  <span className="image-name">{image.name}</span>
+                                  <span className="image-name">
+                                    {image.name}
+                                  </span>
                                 </div>
                               </div>
                             ))}
@@ -576,7 +657,10 @@ function ArticleManagement() {
                       {imagesToRemove.length > 0 && (
                         <div className="removed-images">
                           <div className="removed-header">
-                            <h4>Изображения для удаления ({imagesToRemove.length}):</h4>
+                            <h4>
+                              Изображения для удаления ({imagesToRemove.length}
+                              ):
+                            </h4>
                             <div>
                               <button
                                 type="button"
@@ -591,9 +675,14 @@ function ArticleManagement() {
                           </div>
                           <div className="images-grid">
                             {existingImages
-                              .filter(image => imagesToRemove.includes(image.id))
+                              .filter((image) =>
+                                imagesToRemove.includes(image.id)
+                              )
                               .map((image) => (
-                                <div key={image.id} className="image-item removed">
+                                <div
+                                  key={image.id}
+                                  className="image-item removed"
+                                >
                                   <div className="image-preview">
                                     <img
                                       src={`data:${image.type};base64,${image.data}`}
@@ -603,7 +692,9 @@ function ArticleManagement() {
                                     <div className="image-overlay">
                                       <button
                                         type="button"
-                                        onClick={() => restoreExistingImage(image.id)}
+                                        onClick={() =>
+                                          restoreExistingImage(image.id)
+                                        }
                                         className="btn-restore-image"
                                         title="Восстановить изображение"
                                       >
@@ -612,7 +703,9 @@ function ArticleManagement() {
                                     </div>
                                   </div>
                                   <div className="image-info">
-                                    <span className="image-name">{image.name}</span>
+                                    <span className="image-name">
+                                      {image.name}
+                                    </span>
                                   </div>
                                 </div>
                               ))}
@@ -627,12 +720,16 @@ function ArticleManagement() {
               {/* Новые изображения */}
               <div className="form-group">
                 <label>Добавить новые изображения</label>
+                <small className="form-help">
+                  Эти изображения будут отображаться отдельно от слайд-шоу, в
+                  разделе дополнительных изображений
+                </small>
                 <div className="new-images-section">
                   <input
                     type="file"
                     multiple
                     accept="image/*"
-                    onChange={(e) => handleNewFileUpload(e, 'image')}
+                    onChange={(e) => handleNewFileUpload(e, "image")}
                     className="file-input"
                   />
                   {newImages.length > 0 && (
@@ -650,7 +747,7 @@ function ArticleManagement() {
                               <div className="image-overlay">
                                 <button
                                   type="button"
-                                  onClick={() => removeNewFile(index, 'image')}
+                                  onClick={() => removeNewFile(index, "image")}
                                   className="btn-remove-image"
                                   title="Удалить изображение"
                                 >
@@ -670,7 +767,10 @@ function ArticleManagement() {
               </div>
 
               {/* Сводка изменений */}
-              {(newFiles.length > 0 || newImages.length > 0 || filesToRemove.length > 0 || imagesToRemove.length > 0) && (
+              {(newFiles.length > 0 ||
+                newImages.length > 0 ||
+                filesToRemove.length > 0 ||
+                imagesToRemove.length > 0) && (
                 <div className="changes-summary">
                   <h4>Сводка изменений вложения:</h4>
                   <div className="changes-list">
@@ -689,13 +789,15 @@ function ArticleManagement() {
                     {newImages.length > 0 && (
                       <div className="change-item positive">
                         <i className="fas fa-plus"></i>
-                        Добавлено изображений: <strong>{newImages.length}</strong>
+                        Добавлено изображений:{" "}
+                        <strong>{newImages.length}</strong>
                       </div>
                     )}
                     {imagesToRemove.length > 0 && (
                       <div className="change-item negative">
                         <i className="fas fa-minus"></i>
-                        Удалено изображений: <strong>{imagesToRemove.length}</strong>
+                        Удалено изображений:{" "}
+                        <strong>{imagesToRemove.length}</strong>
                       </div>
                     )}
                   </div>
@@ -769,7 +871,7 @@ function ArticleManagement() {
             className="filter-select"
           >
             <option value="">Все категории</option>
-            {categories.map(category => (
+            {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
               </option>
@@ -794,9 +896,8 @@ function ArticleManagement() {
             <h3>Статьи не найдены</h3>
             <p>
               {articles.length === 0
-                ? 'Создайте первую статью для базы знаний'
-                : 'Попробуйте изменить параметры поиска'
-              }
+                ? "Создайте первую статью для базы знаний"
+                : "Попробуйте изменить параметры поиска"}
             </p>
             <Link to="/articles/create" className="btn-primary">
               Создать статью
@@ -811,15 +912,21 @@ function ArticleManagement() {
                   <th>Категория</th>
                   <th>Содержание</th>
                   <th>Вложения</th>
+                  <th>Слайд-шоу</th>
                   <th>Дата создания</th>
                   <th>Автор</th>
                   <th>Действия</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredArticles.map(article => {
+                {filteredArticles.map((article) => {
                   const files = getFiles(article);
                   const images = getImages(article);
+                  const contentImages = extractImagesFromContent(
+                    article.content
+                  );
+                  const hasSlideshow =
+                    article.enable_slideshow && contentImages.length > 0;
 
                   return (
                     <tr key={article.id} className="article-row">
@@ -827,7 +934,9 @@ function ArticleManagement() {
                         <strong>{article.title}</strong>
                       </td>
                       <td className="article-category-cell">
-                        <span className="category-badge">{article.category_name}</span>
+                        <span className="category-badge">
+                          {article.category_name}
+                        </span>
                       </td>
                       <td className="article-content-cell">
                         <div className="content-excerpt">
@@ -837,12 +946,18 @@ function ArticleManagement() {
                       <td className="article-attachments-cell">
                         <div className="attachments-info">
                           {files.length > 0 && (
-                            <span className="file-count" title={`${files.length} файлов`}>
+                            <span
+                              className="file-count"
+                              title={`${files.length} файлов`}
+                            >
                               <i className="fas fa-file"></i> {files.length}
                             </span>
                           )}
                           {images.length > 0 && (
-                            <span className="image-count" title={`${images.length} изображений`}>
+                            <span
+                              className="image-count"
+                              title={`${images.length} изображений`}
+                            >
                               <i className="fas fa-image"></i> {images.length}
                             </span>
                           )}
@@ -851,8 +966,31 @@ function ArticleManagement() {
                           )}
                         </div>
                       </td>
+                      <td className="article-slideshow-cell">
+                        {hasSlideshow ? (
+                          <span
+                            className="slideshow-enabled"
+                            title={`Слайд-шоу (${contentImages.length} изображений)`}
+                          >
+                            <i className="fas fa-images"></i>{" "}
+                            {contentImages.length}
+                          </span>
+                        ) : contentImages.length > 0 ? (
+                          <span
+                            className="slideshow-available"
+                            title={`${contentImages.length} изображений в контенте`}
+                          >
+                            <i className="fas fa-image"></i>{" "}
+                            {contentImages.length}
+                          </span>
+                        ) : (
+                          <span className="no-slideshow">—</span>
+                        )}
+                      </td>
                       <td className="article-date-cell">
-                        {new Date(article.created_at).toLocaleDateString('ru-RU')}
+                        {new Date(article.created_at).toLocaleDateString(
+                          "ru-RU"
+                        )}
                         {article.updated_at !== article.created_at && (
                           <div className="updated-badge" title="Обновлено">
                             <i className="fas fa-sync-alt"></i>
@@ -879,7 +1017,9 @@ function ArticleManagement() {
                             <i className="fas fa-edit"></i>
                           </button>
                           <button
-                            onClick={() => handleDeleteArticle(article.id, article.title)}
+                            onClick={() =>
+                              handleDeleteArticle(article.id, article.title)
+                            }
                             className="btn-action btn-delete"
                             title="Удалить"
                           >

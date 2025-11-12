@@ -18,8 +18,6 @@ try {
 
   // Hide loading screen after render
   setTimeout(hideLoadingScreen, 100);
-} catch (error) {
-  showErrorFallback(error);
-}
+} catch (error) {}
 
 // Handle runtime errors

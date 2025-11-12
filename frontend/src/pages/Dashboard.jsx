@@ -1,21 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
-import companyLogo from '../img/logo.png';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import axios from "axios";
+import companyLogo from "../img/logo.png";
 
 function Dashboard() {
   const [stats, setStats] = useState({
     totalArticles: 0,
     totalCategories: 0,
-    recentArticles: []
+    recentArticles: [],
   });
   const [categories, setCategories] = useState([]);
   const [categoryStats, setCategoryStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user, isAuthenticated } = useAuth();
-
 
   const [isFetching, setIsFetching] = useState(false);
 
@@ -32,14 +31,14 @@ function Dashboard() {
       setError(null);
 
       const [articlesRes, categoriesRes] = await Promise.all([
-        axios.get('/api/articles').catch(error => {
-          console.error('Ошибка загрузки статей:', error);
+        axios.get("/api/articles").catch((error) => {
+          console.error("Ошибка загрузки статей:", error);
           return { data: [] };
         }),
-        axios.get('/api/categories').catch(error => {
-          console.error('Ошибка загрузки категорий:', error);
+        axios.get("/api/categories").catch((error) => {
+          console.error("Ошибка загрузки категорий:", error);
           return { data: [] };
-        })
+        }),
       ]);
 
       const articles = articlesRes?.data || [];
@@ -47,7 +46,7 @@ function Dashboard() {
 
       // Подсчет статистики
       const stats = {};
-      articles.forEach(article => {
+      articles.forEach((article) => {
         if (article.category_id) {
           stats[article.category_id] = (stats[article.category_id] || 0) + 1;
         }
@@ -58,14 +57,13 @@ function Dashboard() {
       setStats({
         totalArticles: articles.length,
         totalCategories: categories.length,
-        recentArticles
+        recentArticles,
       });
 
       setCategories(categories);
       setCategoryStats(stats);
-
     } catch (error) {
-      console.error('Ошибка загрузки данных:', error);
+      console.error("Ошибка загрузки данных:", error);
     } finally {
       setLoading(false);
     }
@@ -88,19 +86,19 @@ function Dashboard() {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <div className='wrap-header'>
-          <img src={companyLogo} alt="BigCo Inc. logo" className="img_logo me-2" />
-          <h1>
-            Единая база знаний Администрации города Ноябрьска
-          </h1>
+        <div className="wrap-header">
+          <img
+            src={companyLogo}
+            alt="BigCo Inc. logo"
+            className="img_logo me-2"
+          />
+          <h1>Единая база знаний Администрации города Ноябрьска</h1>
         </div>
         <p>
           {isAuthenticated
             ? `С возвращением, ${user?.username}!`
-            : 'Добро пожаловать в нашу Базу Знаний! Просматривайте статьи и категории.'
-          }
+            : "Добро пожаловать в нашу Базу Знаний! Просматривайте статьи и категории."}
         </p>
-
       </div>
 
       <div className="dashboard-main-content">
@@ -119,7 +117,7 @@ function Dashboard() {
               <i className="fas fa-folder-open fa-3x mb-3"></i>
               <h3>Категории отсутствуют</h3>
               <p>Пока нет созданных категорий</p>
-              {isAuthenticated && user?.role === 'admin' && (
+              {isAuthenticated && user?.role === "admin" && (
                 <Link to="/categories/manage" className="btn-primary">
                   <i className="fas fa-plus me-1"></i>
                   Создать категории
@@ -128,7 +126,7 @@ function Dashboard() {
             </div>
           ) : (
             <div className="categories-grid-center">
-              {categories.map(category => (
+              {categories.map((category) => (
                 <Link
                   key={category.id}
                   to={`/articles?category=${category.id}`}
@@ -140,14 +138,16 @@ function Dashboard() {
                   <div className="category-content">
                     <h3 className="category-name">{category.name}</h3>
                     {category.description && (
-                      <p className="category-description">{category.description}</p>
+                      <p className="category-description">
+                        {category.description}
+                      </p>
                     )}
-                    <div className="category-meta">
+                    {/* <div className="category-meta">
                       <span className="article-count">
                         <i className="fas fa-file me-1"></i>
                         Статей: {getArticleCount(category.id)}
                       </span>
-                    </div>
+                    </div> */}
                   </div>
                   <div className="category-arrow">
                     <i className="fas fa-chevron-right"></i>
@@ -158,13 +158,12 @@ function Dashboard() {
           )}
 
           {/* Последние статьи под категориями */}
-
         </div>
 
         {/* Правая часть - Быстрые действия */}
         <div className="quick-actions-sidebar">
           {/* Быстрые ссылки */}
-          <div className="sidebar-section">
+          {/* <div className="sidebar-section">
             <h3>
               <i className="fas fa-link me-2"></i>
               Быстрые ссылки
@@ -183,7 +182,7 @@ function Dashboard() {
                 Помощь
               </Link>
             </div>
-          </div>
+          </div> */}
           <div className="sidebar-section">
             <h3>
               <i className="fas fa-bolt me-2"></i>
@@ -213,7 +212,7 @@ function Dashboard() {
               )} */}
 
               {/* Функционал администратора */}
-              {isAuthenticated && user?.role === 'admin' && (
+              {isAuthenticated && user?.role === "admin" && (
                 <>
                   <div className="admin-section">
                     <h4>
@@ -235,17 +234,11 @@ function Dashboard() {
                       <i className="fas fa-cog me-2"></i>
                       <span>Управление категориями</span>
                     </Link>
-
-
                   </div>
                 </>
               )}
-
-
             </div>
           </div>
-
-
         </div>
       </div>
     </div>
