@@ -2,7 +2,7 @@
 .floating-admin-panel {
   position: fixed;
   right: 20px;
-  bottom: 20px;
+  bottom: 65px;
   z-index: 1000;
   transition: all 0.3s ease;
 }

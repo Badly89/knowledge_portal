@@ -1,0 +1,82 @@
+/* Global CSS */
+.floating-support-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.floating-support-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(37, 117, 252, 0.3);
+  animation: pulse 2s infinite;
+}
+
+.floating-support-button:hover {
+  background: linear-gradient(135deg, #5a0db5 0%, #1c68e8 100%);
+  box-shadow: 0 6px 20px rgba(37, 117, 252, 0.4);
+  transform: translateY(-2px);
+}
+
+.floating-support-button:active {
+  transform: translateY(0);
+}
+
+.support-icon {
+  flex-shrink: 0;
+}
+
+.support-text {
+  white-space: nowrap;
+}
+
+/* Анимация пульсации для привлечения внимания */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 15px rgba(37, 117, 252, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 4px 20px rgba(37, 117, 252, 0.6);
+  }
+
+  100% {
+    box-shadow: 0 4px 15px rgba(37, 117, 252, 0.3);
+  }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .floating-support-container {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .floating-support-button {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .support-text {
+    display: none;
+    /* Скрываем текст на мобильных */
+  }
+
+  .floating-support-button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    justify-content: center;
+  }
+}
