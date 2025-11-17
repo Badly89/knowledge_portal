@@ -248,46 +248,35 @@ function Articles() {
               >
                 <article className="article-card">
                   <div className="article-header">
+                    <div className="category-badge">
+                      <i className="fas fa-folder me-1"></i>
+                      {article.category_name}
+                    </div>
                     <div className="meta-footer-header">
                       <h2 className="article-title">{article.title}</h2>
-
-                      <span className="category-badge">
-                        <i className="fas fa-folder me-1"></i>
-                        {article.category_name}
-                      </span>
                     </div>
                   </div>
 
                   <div className="article-footer">
                     <div className="article-meta ">
                       <div className="meta-footer">
-                        {/* <span className="author">
-                          <i className="fas fa-user me-1"></i>
-                          Автор: {article.author_name}
-                        </span>
-                        <span className="date">
-                          <i className="fas fa-calendar me-1"></i>
-                          {formatDate(article.created_at)}
-                        </span> */}
-                      </div>
-                      <div className="wrap-subtitle">
                         <div className="article-attachments">
                           {/* Добавьте блок с просмотрами */}
-                          <div className="article-views">
+                          <div className="article-views article-attachments-item">
                             <i className="fas fa-eye me-1"></i>
-                            {article.viewscount || 0} просмотров
+                            {article.viewscount || 0}
                           </div>
                           {files.length > 0 && (
-                            <span className="attachments-count">
+                            <span className="attachments-count article-attachments-item">
                               <i className="fas fa-paperclip me-1"></i>
-                              {files.length} файл(ов)
+                              {files.length}
                             </span>
                           )}
                           {images.length > 0 && (
-                            <span className="images-count">
+                            <div className="images-count article-attachments-item">
                               <i className="fas fa-image me-1"></i>
-                              {images.length} изображений
-                            </span>
+                              {images.length}
+                            </div>
                           )}
                         </div>
                       </div>

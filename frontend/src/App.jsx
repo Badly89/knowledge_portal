@@ -1,26 +1,37 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Categories from './pages/Categories';
-import Articles from './pages/Articles';
-import ArticleDetail from './pages/ArticleDetail';
-import CreateArticle from './pages/CreateArticle';
-import CategoryManagement from './pages/CategoryManagement';
-import Navbar from './components/Navbar';
-import ArticleManagement from './pages/ArticleManagement';
-import EditArticle from './pages/EditArticle';
-import SearchArticles from './pages/SearchArticles';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Categories from "./pages/Categories";
+import Articles from "./pages/Articles";
+import ArticleDetail from "./pages/ArticleDetail";
+import CreateArticle from "./pages/CreateArticle";
+import CategoryManagement from "./pages/CategoryManagement";
+import Navbar from "./components/Navbar";
+import ArticleManagement from "./pages/ArticleManagement";
+import EditArticle from "./pages/EditArticle";
+import SearchArticles from "./pages/SearchArticles";
+import "./styles/FloatingAdminPanel.css"; // Добавляем стили
+import FloatingAdminPanel from "./components/ FloatingAdminPanel"; // Добавляем импорт
 
-function ProtectedRoute({ children, requireAuth = false, requireAdmin = false }) {
+function ProtectedRoute({
+  children,
+  requireAuth = false,
+  requireAdmin = false,
+}) {
   const { user, isAuthenticated } = useAuth();
 
   if (requireAuth && !isAuthenticated) {
     return <Navigate to="/login" />;
   }
 
-  if (requireAdmin && (!isAuthenticated || user?.role !== 'admin')) {
+  if (requireAdmin && (!isAuthenticated || user?.role !== "admin")) {
     return <Navigate to="/dashboard" />;
   }
 
@@ -36,14 +47,8 @@ function App() {
           <main className="main-content">
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route
-                path="/dashboard"
-                element={<Dashboard />}
-              />
-              <Route
-                path="/categories"
-                element={<Categories />}
-              />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/categories" element={<Categories />} />
               <Route
                 path="/categories/manage"
                 element={
@@ -52,14 +57,8 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/articles"
-                element={<Articles />}
-              />
-              <Route
-                path="/articles/:id"
-                element={<ArticleDetail />}
-              />
+              <Route path="/articles" element={<Articles />} />
+              <Route path="/articles/:id" element={<ArticleDetail />} />
               <Route
                 path="/articles/create"
                 element={
@@ -85,13 +84,11 @@ function App() {
                 }
               />
 
-              <Route
-                path="/search"
-                element={<SearchArticles />}
-              />
+              <Route path="/search" element={<SearchArticles />} />
               <Route path="/" element={<Navigate to="/dashboard" />} />
             </Routes>
           </main>
+          <FloatingAdminPanel />
         </div>
       </Router>
     </AuthProvider>

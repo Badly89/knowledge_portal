@@ -1434,75 +1434,30 @@ router.get('/management/stats', async (req, res) => {
 });
 
 // Поиск статей
+// В вашем API роутере для статей
 router.get('/search', async (req, res) => {
-  let conn;
   try {
-    const { q: searchQuery, category, page = 1, limit = 10 } = req.query;
+    const { q, limit = 5 } = req.query;
 
-    if (!searchQuery || searchQuery.trim() === '') {
-      return res.status(400).json({ error: 'Поисковый запрос не может быть пустым' });
+    if (!q) {
+      return res.json([]);
     }
 
-    conn = await getConnection();
+    const articles = await Article.find({
+      $or: [
+        { title: { $regex: q, $options: 'i' } },
+        { content: { $regex: q, $options: 'i' } }
+      ]
+    })
+      .populate('category', 'name')
+      .limit(parseInt(limit))
+      .select('title category')
+      .sort({ createdAt: -1 });
 
-    const offset = (page - 1) * limit;
-    const searchTerm = `%${searchQuery.trim()}%`;
-
-    let whereClause = `(a.title LIKE ? OR a.content LIKE ?)`;
-    let queryParams = [searchTerm, searchTerm];
-
-    if (category && category !== 'all') {
-      whereClause += ` AND a.category_id = ?`;
-      queryParams.push(category);
-    }
-
-    const articles = await conn.query(`
-      SELECT a.*, c.name as category_name, u.username as author_name 
-      FROM articles a 
-      LEFT JOIN categories c ON a.category_id = c.id 
-      LEFT JOIN users u ON a.created_by = u.id 
-      WHERE ${whereClause}
-      ORDER BY 
-        CASE 
-          WHEN a.title LIKE ? THEN 1 
-          WHEN a.content LIKE ? THEN 2 
-          ELSE 3 
-        END,
-        a.created_at DESC
-      LIMIT ? OFFSET ?
-    `, [...queryParams, searchTerm, searchTerm, parseInt(limit), offset]);
-
-    const countResult = await conn.query(`
-      SELECT COUNT(*) as total 
-      FROM articles a 
-      WHERE ${whereClause}
-    `, queryParams);
-
-    const totalArticles = Number(countResult[0].total);
-    const totalPages = Math.ceil(totalArticles / limit);
-
-    const processedArticles = articles.map(processArticleDates);
-
-    res.json({
-      articles: processedArticles,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages,
-        totalArticles,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      },
-      searchInfo: {
-        query: searchQuery,
-        category: category || 'all',
-        resultsCount: articles.length
-      }
-    });
+    res.json(articles);
   } catch (error) {
-    console.error('Ошибка поиска статей:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-  } finally {
-    if (conn) conn.release();
+    console.error('Search error:', error);
+    res.status(500).json({ error: 'Ошибка поиска' });
   }
 });
 

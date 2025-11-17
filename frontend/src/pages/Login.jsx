@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 function Login() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const { login, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ function Login() {
     const result = await login(username, password);
 
     if (result.success) {
-      navigate('/dashboard');
+      navigate("/dashboard");
     }
     // Ошибка уже установлена в AuthContext, поэтому не нужно устанавливать здесь
   };
@@ -42,11 +42,7 @@ function Login() {
       <form onSubmit={handleSubmit} className="login-form">
         <h2>Портал Базы Знаний - Вход</h2>
 
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
+        {error && <div className="error-message">{error}</div>}
 
         <div className="form-group">
           <label htmlFor="username">Имя пользователя:</label>
@@ -77,12 +73,10 @@ function Login() {
         <button
           type="submit"
           disabled={loading}
-          className={loading ? 'button-loading' : ''}
+          className={loading ? "button-loading" : "btn-login"}
         >
-          {loading ? 'Вход...' : 'Войти'}
+          {loading ? "Вход..." : "Войти"}
         </button>
-
-
       </form>
     </div>
   );
