@@ -356,7 +356,7 @@ textarea.form-control {
 /* Быстрые действия */
 .admin-quick-actions {
   position: fixed;
-  bottom: 2rem;
+  bottom: 7rem;
   right: 2rem;
   background: var(--color-white);
   border: 1px solid var(--color-gray-400);
@@ -365,15 +365,12 @@ textarea.form-control {
   z-index: 100;
 }
 
+.admin-quick-actions {}
+
 .quick-actions-content {
   padding: 1rem;
 }
 
-.action-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
 
 /* Загрузка */
 .loading-overlay {
@@ -425,15 +422,7 @@ textarea.form-control {
     gap: 1rem;
   }
 
-  .admin-quick-actions {
-    position: static;
-    margin-top: 2rem;
-  }
 
-  .action-buttons {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
 
   .edit-modal {
     margin: 0;
@@ -1016,4 +1005,10 @@ textarea.form-control {
   .form-actions {
     flex-direction: column;
   }
+}
+
+.clear-filter-btn {
+
+  padding: 5px;
+  font-size: 10px;
 }

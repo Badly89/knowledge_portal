@@ -128,12 +128,12 @@ export default defineConfig({
     host: true, // Разрешаем доступ с других устройств
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:6500',
         changeOrigin: true,
         secure: false,
       },
       '/uploads': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:6500',
         changeOrigin: true
       }
     }

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import companyLogo from "../img/logo.png";
+import LoginModal from "../components/LoginModal"; // Импортируем модальное окно
 
 function Dashboard() {
   const [stats, setStats] = useState({
@@ -15,8 +16,8 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user, isAuthenticated } = useAuth();
-
   const [isFetching, setIsFetching] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false); // Состояние для модального окна
 
   useEffect(() => {
     fetchAllData();
@@ -74,6 +75,15 @@ function Dashboard() {
     return categoryStats[categoryId] || 0;
   };
 
+  // Функции для управления модальным окном
+  const handleOpenLogin = () => {
+    setShowLoginModal(true);
+  };
+
+  const handleCloseLogin = () => {
+    setShowLoginModal(false);
+  };
+
   if (loading) {
     return (
       <div className="dashboard-loading">
@@ -85,6 +95,9 @@ function Dashboard() {
 
   return (
     <div className="dashboard">
+      {/* Модальное окно авторизации */}
+      <LoginModal show={showLoginModal} onClose={handleCloseLogin} />
+
       <div className="dashboard-header">
         <div className="wrap-header">
           <img
@@ -142,12 +155,6 @@ function Dashboard() {
                         {category.description}
                       </p>
                     )}
-                    {/* <div className="category-meta">
-                      <span className="article-count">
-                        <i className="fas fa-file me-1"></i>
-                        Статей: {getArticleCount(category.id)}
-                      </span>
-                    </div> */}
                   </div>
                   <div className="category-arrow">
                     <i className="fas fa-chevron-right"></i>
@@ -156,33 +163,10 @@ function Dashboard() {
               ))}
             </div>
           )}
-
-          {/* Последние статьи под категориями */}
         </div>
 
         {/* Правая часть - Быстрые действия */}
         <div className="quick-actions-sidebar">
-          {/* Быстрые ссылки */}
-          {/* <div className="sidebar-section">
-            <h3>
-              <i className="fas fa-link me-2"></i>
-              Быстрые ссылки
-            </h3>
-            <div className="quick-links">
-              <Link to="/articles?sort=recent" className="quick-link">
-                <i className="fas fa-fire me-2"></i>
-                Новые статьи
-              </Link>
-              <Link to="/articles?sort=popular" className="quick-link">
-                <i className="fas fa-star me-2"></i>
-                Популярные
-              </Link>
-              <Link to="/help" className="quick-link">
-                <i className="fas fa-question-circle me-2"></i>
-                Помощь
-              </Link>
-            </div>
-          </div> */}
           <div className="sidebar-section">
             <h3>
               <i className="fas fa-bolt me-2"></i>
@@ -194,25 +178,15 @@ function Dashboard() {
                 <span>Просмотр статей</span>
               </Link>
 
-              <Link to="/categories" className="action-btn">
-                <i className="fas fa-folder me-2"></i>
-                <span>Все категории</span>
-              </Link>
-
               <Link to="/search" className="action-btn">
                 <i className="fas fa-search me-2"></i>
                 <span>Поиск статей</span>
               </Link>
 
-              {/* {!isAuthenticated && (
-                <Link to="/login" className="action-btn highlight">
-                  <i className="fas fa-sign-in-alt me-2"></i>
-                  <span>Войти в систему</span>
-                </Link>
-              )} */}
+              {/* Кнопка входа в систему */}
 
               {/* Функционал администратора */}
-              {isAuthenticated && user?.role === "admin" && (
+              {/* {isAuthenticated && user?.role === "admin" && (
                 <>
                   <div className="admin-section">
                     <h4>
@@ -236,7 +210,7 @@ function Dashboard() {
                     </Link>
                   </div>
                 </>
-              )}
+              )} */}
             </div>
           </div>
         </div>

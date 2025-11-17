@@ -147,6 +147,11 @@ body {
   max-width: 400px;
 }
 
+.login-form {
+  display: flex;
+  flex-direction: column;
+}
+
 .create-article,
 .category-form-panel,
 .article-form,
@@ -233,7 +238,7 @@ button,
 
 button:hover:not(:disabled),
 .btn-primary:hover,
-.read-more-btn:hover,
+
 .action-button:hover,
 .action-btn:hover:not(.admin):not(.highlight),
 .quick-link:hover {
@@ -241,6 +246,19 @@ button:hover:not(:disabled),
   transform: translateY(-2px);
   text-decoration: none;
   color: white;
+}
+
+.read-more-btn {
+  height: 100%;
+
+}
+
+.read-more-btn:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  text-decoration: none;
+  border-radius: 15px;
+  border-color: #2c3e50;
 }
 
 button:disabled {
@@ -689,8 +707,8 @@ tr:hover {
 }
 
 .articles-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 0.75rem;
 }
 
@@ -698,6 +716,7 @@ tr:hover {
 .article-card-horizontal {
   display: flex;
   justify-content: space-between;
+
   align-items: center;
   padding: 1rem;
   border: 1px solid #ecf0f1;
@@ -734,7 +753,7 @@ tr:hover {
 
 .article-meta {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   width: 100%;
   flex-direction: row;
   gap: 1rem;
@@ -760,6 +779,7 @@ tr:hover {
 .meta-footer-header {
   display: flex;
   justify-content: space-between;
+  flex-direction: column;
   align-items: center;
   width: 100%;
 }
@@ -767,6 +787,7 @@ tr:hover {
 .meta-footer {
   display: flex;
   gap: 1.5rem;
+
 }
 
 .article-meta .category {
@@ -1019,6 +1040,7 @@ tr:hover {
 
 .articles-count,
 .results-count {
+  font-size: 14px;
   color: #7f8c8d;
   font-weight: 500;
 }
@@ -1029,6 +1051,7 @@ tr:hover {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  height: 100%;
   background: white;
   padding: 1rem;
   border-radius: 8px;
@@ -1063,12 +1086,12 @@ tr:hover {
 }
 
 .category-badge {
-  background-color: #3498db;
-  color: white;
+  color: rgb(12, 12, 12);
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 500;
+  margin-bottom: 15px;
 }
 
 /* Article Detail */
@@ -1356,7 +1379,11 @@ tr:hover {
 
 .article-attachments {
   display: flex;
+  gap: .5rem;
+}
 
+.article-attachments-item {
+  align-self: flex-end;
 }
 
 .article-attachments-cell {
@@ -1445,6 +1472,10 @@ tr:hover {
   cursor: pointer;
   font-size: 0.8rem;
   padding: 0.25rem;
+}
+
+.btn-login {
+  background: #046d2f;
 }
 
 .preview-image {
@@ -1931,6 +1962,7 @@ tr:hover {
 
 /* Admin Section */
 .admin-section {
+  position: sticky;
   background: linear-gradient(135deg, #f8f9fa, #e9ecef);
   border-radius: 8px;
   padding: 1.25rem;
