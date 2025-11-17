@@ -83,6 +83,13 @@ function Dashboard() {
   const handleCloseLogin = () => {
     setShowLoginModal(false);
   };
+  // Функция для открытия формы поддержки
+  const handleSupportClick = () => {
+    window.open(
+      "https://ditable.yanao.ru/dtable/forms/4474223f-b1d4-4ac8-b01a-9c7bb10238dd/",
+      "_blank"
+    );
+  };
 
   if (loading) {
     return (
@@ -184,33 +191,6 @@ function Dashboard() {
               </Link>
 
               {/* Кнопка входа в систему */}
-
-              {/* Функционал администратора */}
-              {/* {isAuthenticated && user?.role === "admin" && (
-                <>
-                  <div className="admin-section">
-                    <h4>
-                      <i className="fas fa-crown me-2"></i>
-                      Панель администратора
-                    </h4>
-
-                    <Link to="/articles/create" className="action-btn admin">
-                      <i className="fas fa-plus-circle me-2"></i>
-                      <span>Создать статью</span>
-                    </Link>
-
-                    <Link to="/articles/manage" className="action-btn admin">
-                      <i className="fas fa-edit me-2"></i>
-                      <span>Управление статьями</span>
-                    </Link>
-
-                    <Link to="/categories/manage" className="action-btn admin">
-                      <i className="fas fa-cog me-2"></i>
-                      <span>Управление категориями</span>
-                    </Link>
-                  </div>
-                </>
-              )} */}
             </div>
           </div>
         </div>

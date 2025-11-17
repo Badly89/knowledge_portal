@@ -17,6 +17,7 @@ import Navbar from "./components/Navbar";
 import ArticleManagement from "./pages/ArticleManagement";
 import EditArticle from "./pages/EditArticle";
 import SearchArticles from "./pages/SearchArticles";
+import SupportButton from "./components/SupportButton"; // Импортируем кнопку
 import "./styles/FloatingAdminPanel.css"; // Добавляем стили
 import FloatingAdminPanel from "./components/ FloatingAdminPanel"; // Добавляем импорт
 
@@ -90,6 +91,7 @@ function App() {
           </main>
           <FloatingAdminPanel />
         </div>
+        <SupportButton />
       </Router>
     </AuthProvider>
   );
