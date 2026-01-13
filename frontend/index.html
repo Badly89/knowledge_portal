@@ -1,234 +1,89 @@
 <!DOCTYPE html>
-<html lang="ru" class="no-js">
+<html lang="ru">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Портал Базы Знаний - База знаний</title>
-
-  <!-- Мета-описание и SEO -->
+  <link rel="modulepreload" href="/src/index.jsx" />
   <meta name="description" content="Портал базы знаний со статьями, категориями и файлами">
-  <meta name="theme-color" content="#3498db">
 
-  <!-- Предзагрузка ключевых ресурсов -->
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/favicon.svg">
+
+  <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="dns-prefetch" href="//fonts.googleapis.com">
-
-  <!-- Favicon в разных форматах -->
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
-
-  <!-- Предзагрузка основного скрипта-->
-  <!-- <link rel="modulepreload" href="/src/index.jsx" as="script" crossorigin="anonymous"> -->
-
-  <!-- Критический CSS inline для мгновенной отрисовки -->
+  <!-- <link rel="stylesheet" href="src/styles/global.css"> -->
   <style>
-    /* Улучшенный критический CSS */
-    :root {
-      --primary-color: #3498db;
-      --text-color: #333;
-      --bg-color: #fff;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      line-height: 1.6;
-    }
-
-    body {
-      min-height: 100vh;
-      background: var(--bg-color);
-      color: var(--text-color);
-      overflow-x: hidden;
-    }
-
+    /* Minimal critical CSS to avoid FOUC */
     #root {
       min-height: 100vh;
-      isolation: isolate;
     }
 
-    /* Стили экрана загрузки */
-    #loading-screen {
-      position: fixed;
-      inset: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+    /* Loading indicator */
+    .loading {
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 9999;
-      transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-      will-change: opacity, transform;
-    }
-
-    #loading-screen.hidden {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: white;
-      animation: spin 1s ease-in-out infinite;
-      margin-bottom: 1.5rem;
-    }
-
-    .loading-text {
-      font-size: 1.8rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      text-align: center;
-      padding: 0 1rem;
-    }
-
-    .loading-subtext {
-      font-size: 1rem;
-      opacity: 0.8;
-    }
-
-    /* Анимации */
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Сообщение об ошибке */
-    .error-fallback {
-      display: none;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 3rem 1rem;
-      text-align: center;
-      animation: fadeIn 0.5s ease-out;
-    }
-
-    .error-fallback h2 {
-      color: #e74c3c;
-      margin-bottom: 1rem;
-      font-size: 2rem;
-    }
-
-    .error-fallback p {
-      margin-bottom: 2rem;
-      font-size: 1.1rem;
-      color: #666;
-    }
-
-    .error-fallback button {
-      background: var(--primary-color);
-      color: white;
-      border: none;
-      padding: 12px 32px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
-    }
-
-    .error-fallback button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
-    }
-
-    .error-fallback button:active {
-      transform: translateY(0);
-    }
-
-    /* Стили для отключенного JS */
-    .no-js-warning {
-      background: #f8d7da;
-      color: #721c24;
-      padding: 1rem;
-      border: 1px solid #f5c6cb;
-      border-radius: 4px;
-      margin: 1rem;
-      text-align: center;
-    }
-
-    .no-js #loading-screen,
-    .no-js #error-fallback {
-      display: none !important;
-    }
-
-    /* Стили для светлой/темной темы */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg-color: #1a1a1a;
-        --text-color: #f0f0f0;
-      }
-
-      .error-fallback p {
-        color: #aaa;
-      }
-    }
-
-    /* Адаптивность */
-    @media (max-width: 768px) {
-      .loading-text {
-        font-size: 1.5rem;
-      }
-
-      .error-fallback {
-        padding: 2rem 1rem;
-      }
-
-      .error-fallback h2 {
-        font-size: 1.5rem;
-      }
+      height: 100vh;
+      font-family: system-ui, -apple-system, sans-serif;
     }
   </style>
 </head>
 
 <body>
+  <noscript>
+    <div class="no-js-warning">
+      <strong>Внимание!</strong> Для работы этого приложения необходим JavaScript. Пожалуйста, включите JavaScript в
+      настройках вашего браузера.
+    </div>
+  </noscript>
 
-  <!-- Экран загрузки с ARIA атрибутами -->
-  <div id="loading-screen" role="status" aria-live="polite" aria-label="Загрузка приложения">
-    <div class="loading-spinner" aria-hidden="true"></div>
+  <!-- Loading screen -->
+  <div id="loading-screen">
+    <div class="loading-spinner"></div>
     <div class="loading-text">Портал Базы Знаний</div>
     <div class="loading-subtext">Загрузка...</div>
   </div>
 
-  <!-- Основной контейнер приложения -->
-  <main id="root" role="main">
+  <!-- React app root -->
+  <div id="root">
+    <!-- Error fallback content -->
+    <div class="error-fallback" style="display: none;" id="error-fallback">
+      <h2>⚠️ Произошла ошибка</h2>
+      <p>Не удалось загрузить приложение. Пожалуйста, попробуйте обновить страницу.</p>
+      <button onclick="window.location.reload()" style="
+                background: #3498db;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 4px;
+                cursor: pointer;
+                margin-top: 1rem;
+            ">Обновить страницу</button>
+    </div>
+  </div>
+  <script type="module">
+    // Добавляем обработчик для устранения предупреждения
+    window.addEventListener('load', () => {
+      console.log('App loaded successfully');
+    });
 
-  </main>
+    // Fallback если загрузка действительно долгая
+    setTimeout(() => {
+      const loadingEl = document.querySelector('.loading');
+      if (loadingEl && !window.__APP_LOADED__) {
+        loadingEl.innerHTML = '<div>Still loading... Please wait</div>';
+      }
+    }, 3000);
 
-  <!-- Скрипт для управления состоянием загрузки -->
-  <script>
-    // Удаляем класс no-js для активации JS-функционала
-    document.documentElement.classList.remove('no-js');
-
-    // Флаг загрузки приложения
+    // Отмечаем когда приложение загружено
     window.__APP_LOADED__ = false;
+  </script>
 
-    // Управление экраном загрузки
+  <script>
+    // Enhanced loading screen management
     (function () {
       'use strict';
 
@@ -236,68 +91,53 @@
       const errorFallback = document.getElementById('error-fallback');
       const root = document.getElementById('root');
 
-      // Функция скрытия экрана загрузки
+      // Hide loading screen when app is ready
       window.hideLoadingScreen = function () {
-        if (loadingScreen && window.__APP_LOADED__) {
+        if (loadingScreen) {
           loadingScreen.classList.add('hidden');
-          loadingScreen.setAttribute('aria-hidden', 'true');
-
-          // Удаляем элемент после анимации
           setTimeout(() => {
             if (loadingScreen.parentNode) {
               loadingScreen.parentNode.removeChild(loadingScreen);
             }
-          }, 300);
+          }, 500);
         }
       };
 
-
-
-      // Обработка критических ошибок
-      window.addEventListener('error', function (e) {
-        console.error('Глобальная ошибка:', e.error);
-        showErrorFallback('Произошла критическая ошибка при загрузке приложения.');
-        e.preventDefault();
-      }, true);
-
-      // Обработка необработанных отклонений промисов
-      window.addEventListener('unhandledrejection', function (e) {
-        console.error('Необработанное отклонение промиса:', e.reason);
-        showErrorFallback('Ошибка при загрузке данных.');
-        e.preventDefault();
-      });
-
-      // Таймаут загрузки (15 секунд)
-      const loadingTimeout = setTimeout(function () {
-        if (loadingScreen && !loadingScreen.classList.contains('hidden') && !window.__APP_LOADED__) {
-          console.warn('Приложение загружается дольше ожидаемого...');
-          // Можно показать дополнительную информацию или предложить перезагрузку
+      // Show error fallback
+      window.showErrorFallback = function () {
+        if (errorFallback) {
+          errorFallback.style.display = 'block';
         }
-      }, 15000);
+        if (loadingScreen) {
+          loadingScreen.style.display = 'none';
+        }
+      };
 
-      // Очистка таймаута при успешной загрузке
-      window.addEventListener('app-loaded', function () {
-        clearTimeout(loadingTimeout);
+      // Global error handler
+      window.addEventListener('error', function (e) {
+        console.error('Global error:', e.error);
+        showErrorFallback();
       });
 
-      // Оптимизация для медленных соединений
-      if ('connection' in navigator && navigator.connection.saveData) {
-        // Режим экономии трафика
-        console.log('Режим экономии трафика включен');
-      }
+      // Handle unhandled promise rejections
+      window.addEventListener('unhandledrejection', function (e) {
+        console.error('Unhandled promise rejection:', e.reason);
+        showErrorFallback();
+      });
+
+      // Check if page is loaded and show loading state
+      document.addEventListener('DOMContentLoaded', function () {
+        // Set timeout to hide loading screen if app doesn't load
+        setTimeout(function () {
+          if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
+            console.warn('App loading taking longer than expected...');
+          }
+        }, 10000); // 10 seconds timeout
+      });
 
     })();
   </script>
-
-  <!-- Основной скрипт приложения (загружается асинхронно) -->
-  <script type="module" src="/src/index.jsx" defer async crossorigin="anonymous"></script>
-
-  <!-- Резервный скрипт для браузеров без поддержки type="module" -->
-  <script nomodule>
-    console.warn('Ваш браузер не поддерживает ES6 модули. Пожалуйста, обновите браузер.');
-    document.getElementById('error-fallback').style.display = 'block';
-    document.getElementById('loading-screen').style.display = 'none';
-  </script>
+  <script type="module" src="/src/index.jsx"></script>
 </body>
 
 </html>
