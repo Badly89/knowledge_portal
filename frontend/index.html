@@ -18,11 +18,9 @@
   <!-- Favicon в разных форматах -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/manifest.webmanifest">
 
-  <!-- Предзагрузка основного скрипта -->
-  <link rel="modulepreload" href="/src/index.jsx" as="script" crossorigin="anonymous">
+  <!-- Предзагрузка основного скрипта-->
+  <!-- <link rel="modulepreload" href="/src/index.jsx" as="script" crossorigin="anonymous"> -->
 
   <!-- Критический CSS inline для мгновенной отрисовки -->
   <style>
@@ -209,12 +207,6 @@
 </head>
 
 <body>
-  <noscript>
-    <div class="no-js-warning" role="alert">
-      <strong>Внимание!</strong> Для работы этого приложения необходим JavaScript. Пожалуйста, включите JavaScript в
-      настройках вашего браузера.
-    </div>
-  </noscript>
 
   <!-- Экран загрузки с ARIA атрибутами -->
   <div id="loading-screen" role="status" aria-live="polite" aria-label="Загрузка приложения">
@@ -225,12 +217,7 @@
 
   <!-- Основной контейнер приложения -->
   <main id="root" role="main">
-    <!-- Резервный контент при ошибке -->
-    <div class="error-fallback" id="error-fallback" aria-hidden="true">
-      <h2>⚠️ Произошла ошибка</h2>
-      <p>Не удалось загрузить приложение. Пожалуйста, попробуйте обновить страницу.</p>
-      <button onclick="window.location.reload()">Обновить страницу</button>
-    </div>
+
   </main>
 
   <!-- Скрипт для управления состоянием загрузки -->
@@ -264,20 +251,7 @@
         }
       };
 
-      // Показать сообщение об ошибке
-      window.showErrorFallback = function (message) {
-        if (errorFallback) {
-          if (message) {
-            const p = errorFallback.querySelector('p');
-            if (p) p.textContent = message;
-          }
-          errorFallback.style.display = 'block';
-          errorFallback.setAttribute('aria-hidden', 'false');
-        }
-        if (loadingScreen) {
-          loadingScreen.style.display = 'none';
-        }
-      };
+
 
       // Обработка критических ошибок
       window.addEventListener('error', function (e) {
