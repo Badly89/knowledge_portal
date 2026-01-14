@@ -71,7 +71,7 @@ export default defineConfig({
   },
 
   // ✅ Ключевые настройки для production
-  base: './', // или '/' если приложение развернуто в корне
+  base: '/dist', // или '/' если приложение развернуто в корне
 
   build: {
     outDir: 'dist',
