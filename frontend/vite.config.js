@@ -83,21 +83,22 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Оптимизация chunk naming для кэширования
-        entryFileNames: 'assets/js/[name]-[hash:8].js',
-        chunkFileNames: 'assets/js/[name]-[hash:8].js',
-        assetFileNames: (assetInfo) => {
-          const extType = assetInfo.name.split('.')[1]
-          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
-            return 'assets/images/[name]-[hash][extname]'
-          }
-          if (/woff|woff2|eot|ttf|otf/i.test(extType)) {
-            return 'assets/fonts/[name]-[hash][extname]'
-          }
-          if (/css/i.test(extType)) {
-            return 'assets/css/[name]-[hash][extname]'
-          }
-          return 'assets/[name]-[hash][extname]'
-        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[name].[ext]',
+        // assetFileNames: (assetInfo) => {
+        //   const extType = assetInfo.name.split('.')[1]
+        //   if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
+        //     return 'assets/images/[name]-[hash][extname]'
+        //   }
+        //   if (/woff|woff2|eot|ttf|otf/i.test(extType)) {
+        //     return 'assets/fonts/[name]-[hash][extname]'
+        //   }
+        //   if (/css/i.test(extType)) {
+        //     return 'assets/css/[name]-[hash][extname]'
+        //   }
+        //   return 'assets/[name]-[hash][extname]'
+        // },
 
         // Оптимизация разделения кода
         manualChunks: {
