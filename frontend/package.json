@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Frontend for Knowledge Portal - База знаний",
   "scripts": {
+    "dev": "vite",
     "build": "vite build",
     "build:prod": "vite build --mode production",
     "build:analyze": "vite build --mode analyze",
