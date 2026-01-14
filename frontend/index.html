@@ -5,16 +5,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Портал Базы Знаний - База знаний</title>
-  <!-- <link rel="modulepreload" href="/src/index.jsx" /> -->
   <meta name="description" content="Портал базы знаний со статьями, категориями и файлами">
-
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="/favicon.svg">
-
   <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- <link rel="stylesheet" href="src/styles/global.css"> -->
+  <link rel="stylesheet" href="src/styles/global.css">
   <style>
     /* Minimal critical CSS to avoid FOUC */
     #root {
@@ -33,13 +30,6 @@
 </head>
 
 <body>
-  <noscript>
-    <div class="no-js-warning">
-      <strong>Внимание!</strong> Для работы этого приложения необходим JavaScript. Пожалуйста, включите JavaScript в
-      настройках вашего браузера.
-    </div>
-  </noscript>
-
   <!-- Loading screen -->
   <div id="loading-screen">
     <div class="loading-spinner"></div>
@@ -49,20 +39,7 @@
 
   <!-- React app root -->
   <div id="root">
-    <!-- Error fallback content -->
-    <div class="error-fallback" style="display: none;" id="error-fallback">
-      <h2>⚠️ Произошла ошибка</h2>
-      <p>Не удалось загрузить приложение. Пожалуйста, попробуйте обновить страницу.</p>
-      <button onclick="window.location.reload()" style="
-                background: #3498db;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 4px;
-                cursor: pointer;
-                margin-top: 1rem;
-            ">Обновить страницу</button>
-    </div>
+
   </div>
   <script type="module">
     // Добавляем обработчик для устранения предупреждения

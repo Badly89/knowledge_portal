@@ -83,8 +83,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Оптимизация chunk naming для кэширования
-        chunkFileNames: 'assets/js/[name]-[hash].js',
-        entryFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash:8].js',
+        chunkFileNames: 'assets/js/[name]-[hash:8].js',
         assetFileNames: (assetInfo) => {
           const extType = assetInfo.name.split('.')[1]
           if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
